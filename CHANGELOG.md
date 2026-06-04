@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-06-05
+
+### Changed
+
+- Releases are now published from CI via npm **OIDC trusted publishing** with build
+  provenance (`.github/workflows/release.yml`), triggered when a GitHub Release is
+  published — no long-lived npm token. No functional or API changes; the package
+  contents are identical to 0.1.0.
+
 ## [0.1.0] — 2026-06-03
 
 Initial release. A **read-only** MCP server with feature parity on every `GET`
@@ -57,5 +66,6 @@ endpoint of the Recurly v2021-02-25 API — 30 resource-grouped tools covering a
 This is an **unofficial** project, not affiliated with or endorsed by Recurly. It mirrors
 the structure of [airbrake-mcp](https://github.com/francktrouillez/airbrake-mcp).
 
-[Unreleased]: https://github.com/francktrouillez/recurly-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/francktrouillez/recurly-mcp/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/francktrouillez/recurly-mcp/releases/tag/v0.1.1
 [0.1.0]: https://github.com/francktrouillez/recurly-mcp/releases/tag/v0.1.0
