@@ -116,9 +116,10 @@ const cases: Array<[string, Record<string, unknown>, string]> = [
   // export (2)
   ['recurly_export', { action: 'get_dates' }, '/export_dates'],
   ['recurly_export', { action: 'get_files', export_date: '2021-06-01' }, '/export_dates/2021-06-01/export_files'],
-  // dunning_campaigns (2)
+  // dunning_campaigns (3)
   ['recurly_dunning_campaigns', { action: 'list' }, '/dunning_campaigns'],
   ['recurly_dunning_campaigns', { action: 'get', dunning_campaign_id: 'd1' }, '/dunning_campaigns/d1'],
+  ['recurly_dunning_campaigns', { action: 'list_email_templates' }, '/dunning_campaigns/email_templates'],
   // invoice_templates (3)
   ['recurly_invoice_templates', { action: 'list' }, '/invoice_templates'],
   ['recurly_invoice_templates', { action: 'get', invoice_template_id: 'it1' }, '/invoice_templates/it1'],
@@ -161,8 +162,8 @@ const cases: Array<[string, Record<string, unknown>, string]> = [
 ];
 
 describe('read-only action → GET path mapping (feature-parity contract)', () => {
-  it('covers exactly the 97 documented v2021-02-25 read operations', () => {
-    expect(cases.length).toBe(97);
+  it('covers exactly the 98 documented v2021-02-25 read operations', () => {
+    expect(cases.length).toBe(98);
   });
 
   for (const [name, args, path] of cases) {
@@ -191,6 +192,16 @@ describe('read-only action → GET path mapping (feature-parity contract)', () =
     });
     expect(calls[0]?.path).toBe('/accounts/a/subscriptions');
     expect(calls[0]?.options.query).toEqual({ state: 'active', limit: 5 });
+  });
+
+  it('dunning list_email_templates sends no query params but still adds _pagination', async () => {
+    const { ctx, calls } = stub();
+    const res = await tool('recurly_dunning_campaigns').handler(ctx, {
+      action: 'list_email_templates',
+      limit: 5,
+    });
+    expect(calls[0]?.options.query).toEqual({});
+    expect(res).toHaveProperty('_pagination', { has_more: false, next_cursor: null });
   });
 
   it('recurly_request issues a raw GET to an arbitrary path', async () => {
