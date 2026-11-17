@@ -38,6 +38,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const couponRedemptionsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_coupon_redemptions',
+  title: 'Recurly coupon redemptions',
   description:
     'Recurly coupon redemptions (read-only), viewed from their parent resource. Actions: list_for_account, list_active_for_account (the currently-active redemption(s) on an account), get_for_account, list_for_invoice, list_for_subscription, get_for_subscription. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

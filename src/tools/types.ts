@@ -9,6 +9,8 @@ export interface ToolContext {
 
 export interface ToolDefinition<TInput extends z.ZodType> {
   name: string;
+  /** Human-readable display name surfaced to MCP clients (e.g. "Recurly accounts"). */
+  title: string;
   description: string;
   inputSchema: TInput;
   handler: (ctx: ToolContext, input: z.infer<TInput>) => Promise<unknown>;

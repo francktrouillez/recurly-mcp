@@ -16,6 +16,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const invoiceTemplatesTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_invoice_templates',
+  title: 'Recurly invoice templates',
   description:
     'Recurly invoice templates (read-only). Actions: list, get, list_accounts (accounts assigned to a template). Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

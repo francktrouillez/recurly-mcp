@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import nock from 'nock';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListToolsResultSchema,
+  type ListToolsResult,
+} from '@modelcontextprotocol/sdk/types.js';
 import { createServer } from '../src/server.js';
 
 // The SDK stores handlers on a private `_requestHandlers` map keyed by method.
@@ -19,18 +24,21 @@ function getHandler(
   return handler;
 }
 
+// Call tools/list and validate the response against the SDK's own result schema.
+async function listTools(): Promise<ListToolsResult['tools']> {
+  const server = await createServer({ RECURLY_API_KEY: 'k' });
+  const handler = getHandler(server, ListToolsRequestSchema.shape.method.value);
+  const result = await handler({ method: 'tools/list', params: {} }, {});
+  return ListToolsResultSchema.parse(result).tools;
+}
+
 const EXPECTED_TOOL_COUNT = 31;
 
 describe('MCP server integration', () => {
   beforeEach(() => nock.cleanAll());
 
   it('lists all 31 unique recurly_* tools including the escape hatch', async () => {
-    const server = await createServer({ RECURLY_API_KEY: 'k' });
-    const handler = getHandler(server, ListToolsRequestSchema.shape.method.value);
-    const result = (await handler({ method: 'tools/list', params: {} }, {})) as {
-      tools: { name: string }[];
-    };
-    const names = result.tools.map((t) => t.name);
+    const names = (await listTools()).map((t) => t.name);
     expect(names).toHaveLength(EXPECTED_TOOL_COUNT);
     expect(new Set(names).size).toBe(EXPECTED_TOOL_COUNT);
     expect(names).toContain('recurly_accounts');
@@ -40,12 +48,7 @@ describe('MCP server integration', () => {
   });
 
   it('every tool inputSchema satisfies MCP / Claude constraints', async () => {
-    const server = await createServer({ RECURLY_API_KEY: 'k' });
-    const handler = getHandler(server, ListToolsRequestSchema.shape.method.value);
-    const result = (await handler({ method: 'tools/list', params: {} }, {})) as {
-      tools: { name: string; inputSchema: Record<string, unknown> }[];
-    };
-    for (const t of result.tools) {
+    for (const t of await listTools()) {
       expect(t.inputSchema.type, `${t.name} missing type:"object"`).toBe('object');
       expect(t.inputSchema.anyOf, `${t.name} has top-level anyOf`).toBeUndefined();
       expect(t.inputSchema.oneOf, `${t.name} has top-level oneOf`).toBeUndefined();
@@ -67,13 +70,23 @@ describe('MCP server integration', () => {
     expect(state.description).toContain('list_invoices: Filter by invoice state.');
   });
 
+  it('annotates every tool as read-only with a non-empty, unique title', async () => {
+    const tools = await listTools();
+    for (const t of tools) {
+      expect(t.title?.trim(), `${t.name} missing title`).toBeTruthy();
+      expect(t.annotations, `${t.name} annotations`).toEqual({
+        title: t.title,
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      });
+    }
+    expect(new Set(tools.map((t) => t.title)).size).toBe(EXPECTED_TOOL_COUNT);
+  });
+
   it('exposes `action` as a top-level enum for discriminated tools', async () => {
-    const server = await createServer({ RECURLY_API_KEY: 'k' });
-    const handler = getHandler(server, ListToolsRequestSchema.shape.method.value);
-    const result = (await handler({ method: 'tools/list', params: {} }, {})) as {
-      tools: { name: string; inputSchema: Record<string, unknown> }[];
-    };
-    const accounts = result.tools.find((t) => t.name === 'recurly_accounts')!;
+    const accounts = (await listTools()).find((t) => t.name === 'recurly_accounts')!;
     const props = accounts.inputSchema.properties as Record<string, { enum?: string[] }>;
     expect(props.action.enum).toEqual(
       expect.arrayContaining(['list', 'get', 'get_balance', 'list_notes', 'list_entitlements']),

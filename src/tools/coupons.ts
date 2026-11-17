@@ -25,6 +25,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const couponsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_coupons',
+  title: 'Recurly coupons',
   description:
     'Recurly coupons (read-only). Actions: list, get, list_unique_coupon_codes (the generated codes for a bulk coupon), get_unique_coupon_code (a single unique code by ID). coupon_id accepts a Recurly ID or `code-<your_code>`. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

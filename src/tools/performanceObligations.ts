@@ -12,6 +12,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const performanceObligationsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_performance_obligations',
+  title: 'Recurly performance obligations',
   description:
     'Recurly performance obligations (read-only), used for revenue recognition. Actions: list, get. Returns raw Recurly JSON; list adds a _pagination cursor hint.',
   inputSchema,

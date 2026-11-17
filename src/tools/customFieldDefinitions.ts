@@ -20,6 +20,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const customFieldDefinitionsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_custom_field_definitions',
+  title: 'Recurly custom field definitions',
   description:
     'Recurly custom field definitions (read-only). Actions: list, get. Returns raw Recurly JSON; list adds a _pagination cursor hint.',
   inputSchema,

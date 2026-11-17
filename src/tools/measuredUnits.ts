@@ -13,6 +13,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const measuredUnitsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_measured_units',
+  title: 'Recurly measured units',
   description:
     'Recurly measured units (read-only), used for metered/usage-based billing. Actions: list, get. Returns raw Recurly JSON; list adds a _pagination cursor hint.',
   inputSchema,

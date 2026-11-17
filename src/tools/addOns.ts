@@ -13,6 +13,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const addOnsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_add_ons',
+  title: 'Recurly add-ons',
   description:
     'Recurly add-ons (read-only), site-wide across all plans. Actions: list, get. For a specific plan’s add-ons use recurly_plans.list_add_ons. Returns raw Recurly JSON; list adds a _pagination cursor hint.',
   inputSchema,

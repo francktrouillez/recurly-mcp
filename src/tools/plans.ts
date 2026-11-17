@@ -24,6 +24,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const plansTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_plans',
+  title: 'Recurly plans',
   description:
     'Recurly plans (read-only). Actions: list, get, list_add_ons (a plan’s add-ons), get_add_on (a plan add-on by ID). plan_id and add_on_id accept a Recurly ID or `code-<your_code>`. For site-wide add-ons across all plans use recurly_add_ons. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

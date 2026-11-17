@@ -18,6 +18,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const billingInfoTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_billing_info',
+  title: 'Recurly billing info',
   description:
     "Recurly billing info (read-only), scoped to an account. Actions: get (the account's primary billing info), list (all billing infos on the account), get_one (a specific billing info by ID). Returns raw Recurly JSON; list adds a _pagination cursor hint.",
   inputSchema,

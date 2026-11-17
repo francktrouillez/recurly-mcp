@@ -1,9 +1,13 @@
 import { createRequire } from 'node:module';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  type ToolAnnotations,
+} from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { RecurlyClient } from './client/recurly.js';
+import { RecurlyClient, type HttpMethod } from './client/recurly.js';
 import { loadConfig } from './config.js';
 import { shapeResult } from './responseGuard.js';
 import { allTools } from './tools/index.js';
@@ -175,6 +179,17 @@ function errorMessage(err: unknown, toolName: string): string {
   return String(err);
 }
 
+// Every tool only ever issues GET, so the behavioural hints are identical for
+// all of them and set here rather than per tool. `openWorldHint` is true because
+// tools reach an external system (the Recurly API). The conditional type makes
+// this fail to compile if the client's `HttpMethod` ever widens beyond GET.
+const READ_ONLY_HINTS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const satisfies ToolAnnotations & (HttpMethod extends 'GET' ? unknown : never);
+
 export async function createServer(
   env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
 ): Promise<Server> {
@@ -199,8 +214,12 @@ export async function createServer(
     try {
       return {
         name: t.name,
+        // Top-level `title` is the current spec field; `annotations.title` is
+        // the older location some clients still read. Emit both.
+        title: t.title,
         description: t.description,
         inputSchema: toMcpInputSchema(t.inputSchema),
+        annotations: { title: t.title, ...READ_ONLY_HINTS },
       };
     } catch (err) {
       throw new Error(`${t.name}: ${err instanceof Error ? err.message : String(err)}`);

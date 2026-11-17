@@ -9,6 +9,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const giftCardsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_gift_cards',
+  title: 'Recurly gift cards',
   description:
     'Recurly gift cards (read-only). Actions: list, get. Returns raw Recurly JSON; list adds a _pagination cursor hint.',
   inputSchema,
