@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, listParams } from './shared.js';
+import { activeStateFilter } from './filters.js';
 import type { ToolDefinition } from './types.js';
 
 const accountId = idParam('account_id');
@@ -12,7 +13,7 @@ const inputSchema = z.discriminatedUnion('action', [
   z
     .strictObject({ action: z.literal('list_for_account'), account_id: accountId })
     .extend(redemptionListParams)
-    .extend({ state: z.string().optional().describe('Filter by state, e.g. active or inactive.') }),
+    .extend(activeStateFilter),
   z.strictObject({ action: z.literal('list_active_for_account'), account_id: accountId }),
   z.strictObject({
     action: z.literal('get_for_account'),

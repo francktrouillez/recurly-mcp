@@ -53,6 +53,20 @@ describe('MCP server integration', () => {
     }
   });
 
+  it("advertises every action's enum values for a filter shared under one name", async () => {
+    const server = await createServer({ RECURLY_API_KEY: 'k' });
+    const handler = getHandler(server, ListToolsRequestSchema.shape.method.value);
+    const result = (await handler({ method: 'tools/list', params: {} }, {})) as {
+      tools: { name: string; inputSchema: Record<string, unknown> }[];
+    };
+    const subs = result.tools.find((t) => t.name === 'recurly_subscriptions')!;
+    const state = (subs.inputSchema.properties as Record<string, Record<string, unknown>>).state;
+    // Subscription, invoice and line-item states from list / list_invoices / list_line_items.
+    expect(state.enum).toEqual(expect.arrayContaining(['in_trial', 'paid', 'invoiced']));
+    expect(state.description).toMatch(/^list, list_for_account: Filter by subscription state/);
+    expect(state.description).toContain('list_invoices: Filter by invoice state.');
+  });
+
   it('exposes `action` as a top-level enum for discriminated tools', async () => {
     const server = await createServer({ RECURLY_API_KEY: 'k' });
     const handler = getHandler(server, ListToolsRequestSchema.shape.method.value);

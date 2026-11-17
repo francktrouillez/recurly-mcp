@@ -1,20 +1,9 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParams, standardListParams } from './shared.js';
+import { enc, fetchList, idParam, listParams, optionalEnum, standardListParams } from './shared.js';
+import { accountFilters } from './filters.js';
 import type { ToolDefinition } from './types.js';
 
 const accountId = idParam('account_id');
-
-const accountFilters = {
-  email: z.string().optional().describe('Filter for accounts with this exact email address.'),
-  subscriber: z
-    .boolean()
-    .optional()
-    .describe('Filter for accounts with (true) or without (false) a subscription.'),
-  past_due: z
-    .string()
-    .optional()
-    .describe('Filter for accounts with an invoice in the past_due state ("true"/"false").'),
-};
 
 const inputSchema = z.discriminatedUnion('action', [
   z
@@ -40,7 +29,12 @@ const inputSchema = z.discriminatedUnion('action', [
   z
     .strictObject({ action: z.literal('list_entitlements'), account_id: accountId })
     .extend(listParams())
-    .extend({ state: z.string().optional().describe('Filter by state, e.g. subscribed.') }),
+    .extend({
+      state: optionalEnum(
+        ['active', 'canceled', 'expired', 'future'],
+        'Filter by the state of the applicable subscription. Omit for active and canceled.',
+      ),
+    }),
 ]);
 
 export const accountsTool: ToolDefinition<typeof inputSchema> = {

@@ -1,11 +1,7 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { transactionFilters } from './filters.js';
 import type { ToolDefinition } from './types.js';
-
-const transactionFilters = {
-  type: z.string().optional().describe('Filter by transaction type, e.g. authorization, purchase.'),
-  success: z.string().optional().describe('Filter by success ("true"/"false").'),
-};
 
 const inputSchema = z.discriminatedUnion('action', [
   z

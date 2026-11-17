@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { activeStateFilter } from './filters.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
   z
     .strictObject({ action: z.literal('list') })
     .extend(standardListParams)
-    .extend({ state: z.string().optional().describe('Filter by state, e.g. active or inactive.') }),
+    .extend(activeStateFilter),
   z.strictObject({ action: z.literal('get'), item_id: idParam('item_id') }),
 ]);
 

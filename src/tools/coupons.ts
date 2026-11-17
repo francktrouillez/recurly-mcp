@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { enc, fetchList, idParam, optionalEnum, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
@@ -12,7 +12,10 @@ const inputSchema = z.discriminatedUnion('action', [
     })
     .extend(standardListParams)
     .extend({
-      redeemed: z.string().optional().describe('Filter by redemption status ("true"/"false").'),
+      redeemed: optionalEnum(
+        ['true', 'false'],
+        'Filter by redemption status: true for redeemed, false for not.',
+      ),
     }),
   z.strictObject({
     action: z.literal('get_unique_coupon_code'),

@@ -1,12 +1,13 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { activeStateFilter } from './filters.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
   z
     .strictObject({ action: z.literal('list') })
     .extend(standardListParams)
-    .extend({ state: z.string().optional().describe('Filter by state.') }),
+    .extend(activeStateFilter),
   z.strictObject({ action: z.literal('get'), measured_unit_id: idParam('measured_unit_id') }),
 ]);
 

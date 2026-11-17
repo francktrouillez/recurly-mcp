@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { enc, fetchList, idParam, optionalEnum, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
@@ -7,7 +7,10 @@ const inputSchema = z.discriminatedUnion('action', [
     .strictObject({ action: z.literal('list') })
     .extend(standardListParams)
     .extend({
-      related_type: z.string().optional().describe('Filter by related type, e.g. account or item.'),
+      related_type: optionalEnum(
+        ['account', 'item', 'plan', 'subscription', 'charge'],
+        'Filter by related type.',
+      ),
     }),
   z.strictObject({
     action: z.literal('get'),

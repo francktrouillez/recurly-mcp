@@ -1,13 +1,9 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, listParams, standardListParams } from './shared.js';
+import { invoiceFilters } from './filters.js';
 import type { ToolDefinition } from './types.js';
 
 const businessEntityId = idParam('business_entity_id');
-
-const invoiceFilters = {
-  state: z.string().optional().describe('Filter by invoice state, e.g. open, paid, past_due.'),
-  type: z.string().optional().describe('Filter by invoice type, e.g. charge, credit.'),
-};
 
 const inputSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('list') }).extend(listParams()),
