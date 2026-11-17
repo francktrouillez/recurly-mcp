@@ -1,3 +1,5 @@
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { loadConfig } from '../src/config.js';
 
@@ -89,5 +91,26 @@ describe('loadConfig', () => {
       maxOutputBytes: 20000,
     });
     expect(() => loadConfig({ RECURLY_MAX_OUTPUT_BYTES: '500' })).toThrow(/>= 1000/);
+  });
+
+  it('defaults pdfDir to <tmpdir>/recurly-mcp (also when RECURLY_PDF_DIR is empty)', () => {
+    const expected = path.join(os.tmpdir(), 'recurly-mcp');
+    expect(loadConfig({}).pdfDir).toBe(expected);
+    expect(loadConfig({ RECURLY_PDF_DIR: '' }).pdfDir).toBe(expected);
+  });
+
+  it('resolves RECURLY_PDF_DIR to an absolute, normalized path', () => {
+    const abs = path.join(os.tmpdir(), 'invoices');
+    expect(loadConfig({ RECURLY_PDF_DIR: abs }).pdfDir).toBe(abs);
+    expect(loadConfig({ RECURLY_PDF_DIR: `${abs}/x/..` }).pdfDir).toBe(abs);
+    expect(loadConfig({ RECURLY_PDF_DIR: 'rel/pdfs' }).pdfDir).toBe(path.resolve('rel/pdfs'));
+    expect(loadConfig({ RECURLY_PDF_DIR: '~/pdfs' }).pdfDir).toBe(path.join(os.homedir(), 'pdfs'));
+    expect(loadConfig({ RECURLY_PDF_DIR: '~' }).pdfDir).toBe(os.homedir());
+  });
+
+  it('rejects a blank, whitespace-padded or NUL-containing RECURLY_PDF_DIR', () => {
+    expect(() => loadConfig({ RECURLY_PDF_DIR: '   ' })).toThrow(/RECURLY_PDF_DIR/);
+    expect(() => loadConfig({ RECURLY_PDF_DIR: ' /tmp/pdfs' })).toThrow(/whitespace/);
+    expect(() => loadConfig({ RECURLY_PDF_DIR: '/tmp/a\0b' })).toThrow(/NUL/);
   });
 });

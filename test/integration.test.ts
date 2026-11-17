@@ -1,3 +1,6 @@
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import nock from 'nock';
 import {
@@ -105,6 +108,36 @@ describe('MCP server integration', () => {
     )) as { content: { text: string }[] };
     expect(result.content[0]?.text).toContain('"object"');
     expect(result.content[0]?.text).toContain('_pagination');
+  });
+
+  it('get_pdf saves a PDF larger than the output cap under RECURLY_PDF_DIR', async () => {
+    const pdf = Buffer.concat([Buffer.from('%PDF-1.7\n'), Buffer.alloc(200_000, 0xab)]);
+    nock('https://v3.recurly.com')
+      .get('/invoices/number-1001.pdf')
+      .reply(200, pdf, { 'content-type': 'application/pdf' });
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'recurly-mcp-it-'));
+    try {
+      const server = await createServer({ RECURLY_API_KEY: 'k', RECURLY_PDF_DIR: dir });
+      const handler = getHandler(server, CallToolRequestSchema.shape.method.value);
+      const result = (await handler(
+        {
+          method: 'tools/call',
+          params: {
+            name: 'recurly_invoices',
+            arguments: { action: 'get_pdf', invoice_id: 'number-1001' },
+          },
+        },
+        {},
+      )) as { isError?: boolean; content: { text: string }[] };
+      expect(result.isError).toBeUndefined();
+      const meta = JSON.parse(result.content[0]!.text);
+      expect(meta).not.toHaveProperty('_response_too_large');
+      expect(meta.byte_length).toBe(pdf.length);
+      expect(meta.path).toBe(path.join(await fs.realpath(dir), 'invoice-number-1001.pdf'));
+      expect(await fs.readFile(meta.path)).toEqual(pdf);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
   });
 
   it('returns isError on an unknown tool', async () => {

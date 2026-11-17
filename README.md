@@ -48,6 +48,7 @@ All configuration is via environment variables.
 | `RECURLY_TIMEOUT_MS` | no | `15000` | Per-request timeout. |
 | `RECURLY_MAX_RETRIES` | no | `2` | Retries on 429 and 5xx (honors `Retry-After`, equal-jitter backoff). |
 | `RECURLY_MAX_OUTPUT_BYTES` | no | `75000` | Max size (UTF-8 bytes of compact JSON) of a single tool result sent to the MCP client. Minimum `1000`. See [Response size limit](#response-size-limit). |
+| `RECURLY_PDF_DIR` | no | `<os tmpdir>/recurly-mcp` | Directory where `recurly_invoices` `get_pdf` saves invoice PDFs. Created on first use with mode `0700` (an existing one must be yours and `0700`); a leading `~` is expanded; relative paths resolve against the server's working directory. |
 
 Get a private API key from the Recurly dashboard → Integrations → API Credentials. Use a key scoped to read-only access where possible — this server never writes, but defense in depth is good.
 
@@ -164,13 +165,21 @@ Raise the limit if your client accepts larger results.
 
 ### Invoice PDFs
 
-`recurly_invoices` `get_pdf` returns the PDF as a base64 wrapper rather than a mangled string:
+By default, `recurly_invoices` `get_pdf` saves the PDF to disk under `RECURLY_PDF_DIR` (file name derived from the sanitized invoice id) and returns only metadata:
+
+```json
+{ "object": "binary_file", "content_type": "application/pdf", "byte_length": 123456, "sha256": "…", "path": "/tmp/recurly-mcp/invoice-number-1001.pdf" }
+```
+
+Invoices contain personal data. Files are written with mode `0600` inside a `0700` directory (an existing directory must be owned by you with no group/other access, or it is refused), and a repeat download overwrites the same file. The server never deletes them — cleaning up is the caller's/user's responsibility.
+
+Pass `"delivery": "inline"` to get the bytes back as a base64 wrapper instead (still subject to the tool-output size cap, so only small PDFs fit):
 
 ```json
 { "object": "binary_file", "content_type": "application/pdf", "encoding": "base64", "byte_length": 12345, "data": "JVBERi0…" }
 ```
 
-Base64 inflates the PDF by about a third, so with the default [response size limit](#response-size-limit) any PDF larger than roughly 55 KB comes back as a `_response_too_large` envelope instead. Raise `RECURLY_MAX_OUTPUT_BYTES` if you need larger PDFs inline.
+Base64 inflates the PDF by about a third, so with the default [response size limit](#response-size-limit) any inline PDF larger than roughly 55 KB comes back as a `_response_too_large` envelope instead. Raise `RECURLY_MAX_OUTPUT_BYTES` if you need larger PDFs inline.
 
 ### Coverage notes
 

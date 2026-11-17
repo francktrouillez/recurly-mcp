@@ -71,7 +71,7 @@ const cases: Array<[string, Record<string, unknown>, string]> = [
   // invoices (6)
   ['recurly_invoices', { action: 'list' }, '/invoices'],
   ['recurly_invoices', { action: 'get', invoice_id: 'i1' }, '/invoices/i1'],
-  ['recurly_invoices', { action: 'get_pdf', invoice_id: 'i1' }, '/invoices/i1.pdf'],
+  ['recurly_invoices', { action: 'get_pdf', invoice_id: 'i1', delivery: 'inline' }, '/invoices/i1.pdf'],
   ['recurly_invoices', { action: 'list_line_items', invoice_id: 'i1' }, '/invoices/i1/line_items'],
   ['recurly_invoices', { action: 'list_related', invoice_id: 'i1' }, '/invoices/i1/related_invoices'],
   ['recurly_invoices', { action: 'list_for_account', account_id: 'a' }, '/accounts/a/invoices'],
