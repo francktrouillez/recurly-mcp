@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const accountId = idParam('account_id');
@@ -18,28 +18,28 @@ const accountFilters = {
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(standardListParams)
     .extend(accountFilters),
-  z.object({ action: z.literal('get'), account_id: accountId }),
-  z.object({ action: z.literal('get_balance'), account_id: accountId }),
-  z.object({ action: z.literal('get_acquisition'), account_id: accountId }),
-  z.object({ action: z.literal('list_acquisitions') }).extend(listParamsSchema.shape),
+  z.strictObject({ action: z.literal('get'), account_id: accountId }),
+  z.strictObject({ action: z.literal('get_balance'), account_id: accountId }),
+  z.strictObject({ action: z.literal('get_acquisition'), account_id: accountId }),
+  z.strictObject({ action: z.literal('list_acquisitions') }).extend(standardListParams),
   z
-    .object({ action: z.literal('list_child_accounts'), account_id: accountId })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_child_accounts'), account_id: accountId })
+    .extend(standardListParams)
     .extend(accountFilters),
   z
-    .object({ action: z.literal('list_notes'), account_id: accountId })
-    .extend(listParamsSchema.shape),
-  z.object({
+    .strictObject({ action: z.literal('list_notes'), account_id: accountId })
+    .extend(listParams('ids')),
+  z.strictObject({
     action: z.literal('get_note'),
     account_id: accountId,
     account_note_id: idParam('account_note_id'),
   }),
   z
-    .object({ action: z.literal('list_entitlements'), account_id: accountId })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_entitlements'), account_id: accountId })
+    .extend(listParams())
     .extend({ state: z.string().optional().describe('Filter by state, e.g. subscribed.') }),
 ]);
 

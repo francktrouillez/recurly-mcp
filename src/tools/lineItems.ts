@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const lineItemFilters = {
@@ -10,13 +10,13 @@ const lineItemFilters = {
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(standardListParams)
     .extend(lineItemFilters),
-  z.object({ action: z.literal('get'), line_item_id: idParam('line_item_id') }),
+  z.strictObject({ action: z.literal('get'), line_item_id: idParam('line_item_id') }),
   z
-    .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
+    .extend(standardListParams)
     .extend(lineItemFilters),
 ]);
 

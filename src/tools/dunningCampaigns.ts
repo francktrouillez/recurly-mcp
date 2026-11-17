@@ -1,17 +1,19 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), dunning_campaign_id: idParam('dunning_campaign_id') }),
-  z.object({ action: z.literal('list_email_templates') }),
+  z.strictObject({ action: z.literal('list') }).extend(listParams('sort')),
+  z.strictObject({ action: z.literal('get'), dunning_campaign_id: idParam('dunning_campaign_id') }),
+  // The spec lists no query params for this endpoint; `cursor` is still
+  // accepted so later pages can be fetched through this action.
+  z.strictObject({ action: z.literal('list_email_templates') }).extend(listParams()),
 ]);
 
 export const dunningCampaignsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_dunning_campaigns',
   description:
-    'Recurly dunning campaigns (read-only). Actions: list, get, list_email_templates (custom email templates assignable to dunning intervals; no params; to page, call recurly_request on /dunning_campaigns/email_templates with query.cursor = _pagination.next_cursor). Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
+    'Recurly dunning campaigns (read-only). Actions: list, get, list_email_templates (custom email templates assignable to dunning intervals; accepts only cursor). Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,
   handler: async (ctx, input) => {
     const parsed = inputSchema.parse(input);

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const subscriptionId = idParam('subscription_id');
@@ -17,25 +17,25 @@ const lineItemFilters = {
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(standardListParams)
     .extend({
       state: z.string().optional().describe('Filter by subscription state, e.g. active.'),
     }),
-  z.object({ action: z.literal('get'), subscription_id: subscriptionId }),
-  z.object({ action: z.literal('get_change'), subscription_id: subscriptionId }),
-  z.object({ action: z.literal('get_preview_renewal'), subscription_id: subscriptionId }),
+  z.strictObject({ action: z.literal('get'), subscription_id: subscriptionId }),
+  z.strictObject({ action: z.literal('get_change'), subscription_id: subscriptionId }),
+  z.strictObject({ action: z.literal('get_preview_renewal'), subscription_id: subscriptionId }),
   z
-    .object({ action: z.literal('list_invoices'), subscription_id: subscriptionId })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_invoices'), subscription_id: subscriptionId })
+    .extend(standardListParams)
     .extend(invoiceFilters),
   z
-    .object({ action: z.literal('list_line_items'), subscription_id: subscriptionId })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_line_items'), subscription_id: subscriptionId })
+    .extend(standardListParams)
     .extend(lineItemFilters),
   z
-    .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
+    .extend(standardListParams)
     .extend({
       state: z.string().optional().describe('Filter by subscription state, e.g. active.'),
     }),

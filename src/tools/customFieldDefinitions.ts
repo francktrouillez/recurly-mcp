@@ -1,15 +1,15 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(standardListParams)
     .extend({
       related_type: z.string().optional().describe('Filter by related type, e.g. account or item.'),
     }),
-  z.object({
+  z.strictObject({
     action: z.literal('get'),
     custom_field_definition_id: idParam('custom_field_definition_id'),
   }),

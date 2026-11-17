@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(listParams('limit', 'order', 'sort', 'ids'))
     .extend({ state: z.string().optional().describe('Filter by state, e.g. active or inactive.') }),
-  z.object({ action: z.literal('get'), site_id: idParam('site_id') }),
+  z.strictObject({ action: z.literal('get'), site_id: idParam('site_id') }),
 ]);
 
 export const sitesTool: ToolDefinition<typeof inputSchema> = {

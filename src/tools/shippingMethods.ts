@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), shipping_method_id: idParam('shipping_method_id') }),
+  z.strictObject({ action: z.literal('list') }).extend(standardListParams),
+  z.strictObject({ action: z.literal('get'), shipping_method_id: idParam('shipping_method_id') }),
 ]);
 
 export const shippingMethodsTool: ToolDefinition<typeof inputSchema> = {

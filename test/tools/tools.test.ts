@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
 import { allTools } from '../../src/tools/index.js';
 import type { ToolContext } from '../../src/tools/types.js';
 
@@ -194,14 +195,38 @@ describe('read-only action → GET path mapping (feature-parity contract)', () =
     expect(calls[0]?.options.query).toEqual({ state: 'active', limit: 5 });
   });
 
-  it('dunning list_email_templates sends no query params but still adds _pagination', async () => {
+  it('dunning list_email_templates forwards only cursor and adds _pagination', async () => {
     const { ctx, calls } = stub();
     const res = await tool('recurly_dunning_campaigns').handler(ctx, {
       action: 'list_email_templates',
-      limit: 5,
+      cursor: 'c2',
     });
-    expect(calls[0]?.options.query).toEqual({});
+    expect(calls[0]?.options.query).toEqual({ cursor: 'c2' });
     expect(res).toHaveProperty('_pagination', { has_more: false, next_cursor: null });
+    await expect(
+      tool('recurly_dunning_campaigns').handler(ctx, { action: 'list_email_templates', limit: 5 }),
+    ).rejects.toThrow(/Unrecognized key.*limit/);
+  });
+
+  it('every action rejects unknown keys (all branches are strict)', async () => {
+    const { ctx } = stub();
+    for (const [name, args] of cases) {
+      await expect(
+        tool(name).handler(ctx, { ...args, not_a_param: 'x' }),
+        `${name}: ${String(args.action)}`,
+      ).rejects.toThrow(/Unrecognized key.*not_a_param/);
+    }
+  });
+
+  it('rejects a param the endpoint does not support, naming the key', async () => {
+    const { ctx, calls } = stub();
+    await expect(
+      tool('recurly_gift_cards').handler(ctx, { action: 'list', begin_time: '2024-01-01' }),
+    ).rejects.toThrow(/Unrecognized key.*begin_time/);
+    await expect(
+      tool('recurly_accounts').handler(ctx, { action: 'get', account_id: 'a', limit: 5 }),
+    ).rejects.toThrow(/Unrecognized key.*limit/);
+    expect(calls).toHaveLength(0);
   });
 
   it('recurly_request issues a raw GET to an arbitrary path', async () => {
@@ -218,5 +243,97 @@ describe('read-only action → GET path mapping (feature-parity contract)', () =
       tool('recurly_request').handler(ctx, { path: '/accounts/../../admin' }),
     ).rejects.toThrow();
     await expect(tool('recurly_request').handler(ctx, { path: 'accounts' })).rejects.toThrow();
+    await expect(
+      tool('recurly_request').handler(ctx, { path: '/accounts', limit: 5 }),
+    ).rejects.toThrow(/Unrecognized key.*limit/);
   });
+});
+
+// Query params each list action accepts: exactly what the Recurly v2021-02-25
+// OpenAPI spec documents for its endpoint, plus `cursor` (always accepted, as
+// Recurly's `next` links carry it). One row per list endpoint.
+const listQueryParams: Array<[string, string, string]> = [
+  ['recurly_sites', 'list', 'ids limit order sort state'],
+  ['recurly_accounts', 'list', 'begin_time email end_time ids limit order past_due sort subscriber'],
+  ['recurly_accounts', 'list_acquisitions', 'begin_time end_time ids limit order sort'],
+  ['recurly_accounts', 'list_child_accounts', 'begin_time email end_time ids limit order past_due sort subscriber'],
+  ['recurly_accounts', 'list_notes', 'ids'],
+  ['recurly_accounts', 'list_entitlements', 'state'],
+  ['recurly_billing_info', 'list', 'begin_time end_time ids sort'],
+  ['recurly_shipping_addresses', 'list', 'begin_time end_time ids limit order sort'],
+  ['recurly_coupons', 'list', 'begin_time end_time ids limit order sort'],
+  ['recurly_coupons', 'list_unique_coupon_codes', 'begin_time end_time ids limit order redeemed sort'],
+  ['recurly_coupon_redemptions', 'list_for_account', 'begin_time end_time ids sort state'],
+  ['recurly_coupon_redemptions', 'list_for_invoice', 'begin_time end_time ids sort'],
+  ['recurly_coupon_redemptions', 'list_for_subscription', 'begin_time end_time ids sort'],
+  ['recurly_credit_payments', 'list', 'begin_time end_time limit order sort'],
+  ['recurly_credit_payments', 'list_for_account', 'begin_time end_time limit order sort'],
+  ['recurly_invoices', 'list', 'begin_time end_time ids limit order sort state type'],
+  ['recurly_invoices', 'list_line_items', 'begin_time end_time ids limit order original sort state type'],
+  ['recurly_invoices', 'list_related', ''],
+  ['recurly_invoices', 'list_for_account', 'begin_time end_time ids limit order sort state type'],
+  ['recurly_line_items', 'list', 'begin_time end_time ids limit order original sort state type'],
+  ['recurly_line_items', 'list_for_account', 'begin_time end_time ids limit order original sort state type'],
+  ['recurly_subscriptions', 'list', 'begin_time end_time ids limit order sort state'],
+  ['recurly_subscriptions', 'list_invoices', 'begin_time end_time ids limit order sort state type'],
+  ['recurly_subscriptions', 'list_line_items', 'begin_time end_time ids limit order original sort state type'],
+  ['recurly_subscriptions', 'list_for_account', 'begin_time end_time ids limit order sort state'],
+  ['recurly_transactions', 'list', 'begin_time end_time ids limit order sort success type'],
+  ['recurly_transactions', 'list_for_account', 'begin_time end_time ids limit order sort success type'],
+  ['recurly_custom_field_definitions', 'list', 'begin_time end_time ids limit order related_type sort'],
+  ['recurly_items', 'list', 'begin_time end_time ids limit order sort state'],
+  ['recurly_measured_units', 'list', 'begin_time end_time ids limit order sort state'],
+  ['recurly_plans', 'list', 'begin_time end_time ids limit order sort state'],
+  ['recurly_plans', 'list_add_ons', 'begin_time end_time ids limit order sort state'],
+  ['recurly_add_ons', 'list', 'begin_time end_time ids limit order sort state'],
+  ['recurly_shipping_methods', 'list', 'begin_time end_time ids limit order sort'],
+  ['recurly_usage', 'list', 'begin_time billing_status end_time ids limit order sort'],
+  ['recurly_dunning_campaigns', 'list', 'sort'],
+  ['recurly_dunning_campaigns', 'list_email_templates', ''],
+  ['recurly_invoice_templates', 'list', 'sort'],
+  ['recurly_invoice_templates', 'list_accounts', 'begin_time email end_time ids limit order past_due sort subscriber'],
+  ['recurly_external_products', 'list', 'sort'],
+  ['recurly_external_products', 'list_references', 'sort'],
+  ['recurly_external_subscriptions', 'list', 'sort'],
+  ['recurly_external_subscriptions', 'list_invoices', 'limit order sort'],
+  ['recurly_external_subscriptions', 'list_payment_phases', 'limit order sort'],
+  ['recurly_external_subscriptions', 'list_for_account', 'sort'],
+  ['recurly_external_invoices', 'list', 'limit order sort'],
+  ['recurly_external_invoices', 'list_for_account', 'limit order sort'],
+  ['recurly_external_accounts', 'list', ''],
+  ['recurly_general_ledger_accounts', 'list', 'account_type ids limit order sort'],
+  ['recurly_performance_obligations', 'list', ''],
+  ['recurly_price_segments', 'list', 'ids limit order'],
+  ['recurly_business_entities', 'list', ''],
+  ['recurly_business_entities', 'list_invoices', 'begin_time end_time ids limit order sort state type'],
+  ['recurly_gift_cards', 'list', ''],
+];
+
+type Branch = z.ZodObject<z.ZodRawShape>;
+
+// Every discriminated-union branch of every tool, keyed `tool:action`.
+const branches = new Map<string, Branch>();
+for (const t of allTools) {
+  if (!(t.inputSchema instanceof z.ZodDiscriminatedUnion)) continue;
+  for (const b of t.inputSchema.options as Branch[]) {
+    branches.set(`${t.name}:${String((b.shape.action as z.ZodLiteral).value)}`, b);
+  }
+}
+
+describe('list actions accept exactly the query params their endpoint documents', () => {
+  it('covers every list action (every branch that takes a cursor)', () => {
+    const listActions = [...branches].filter(([, b]) => 'cursor' in b.shape).map(([k]) => k);
+    expect(listActions.sort()).toEqual(listQueryParams.map(([t, a]) => `${t}:${a}`).sort());
+  });
+
+  for (const [name, action, query] of listQueryParams) {
+    it(`${name}: ${action} accepts ${query || '(none)'} + cursor`, () => {
+      // Path params come from the action's row in the path-mapping table.
+      const args = cases.find(([t, a]) => t === name && a.action === action)?.[1];
+      if (!args) throw new Error(`no path-mapping case for ${name}:${action}`);
+      const expected = [...Object.keys(args), ...query.split(' ').filter(Boolean), 'cursor'];
+      const keys = Object.keys(branches.get(`${name}:${action}`)!.shape);
+      expect(keys.sort()).toEqual(expected.sort());
+    });
+  }
 });

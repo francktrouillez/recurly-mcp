@@ -1,18 +1,18 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(listParams('limit', 'order', 'sort', 'ids'))
     .extend({
       account_type: z
         .string()
         .optional()
         .describe('Filter by general ledger account type, e.g. liability or revenue.'),
     }),
-  z.object({
+  z.strictObject({
     action: z.literal('get'),
     general_ledger_account_id: idParam('general_ledger_account_id'),
   }),

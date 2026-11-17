@@ -1,32 +1,32 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const externalSubscriptionId = idParam('external_subscription_id');
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), external_subscription_id: externalSubscriptionId }),
+  z.strictObject({ action: z.literal('list') }).extend(listParams('sort')),
+  z.strictObject({ action: z.literal('get'), external_subscription_id: externalSubscriptionId }),
   z
-    .object({
+    .strictObject({
       action: z.literal('list_invoices'),
       external_subscription_id: externalSubscriptionId,
     })
-    .extend(listParamsSchema.shape),
+    .extend(listParams('limit', 'order', 'sort')),
   z
-    .object({
+    .strictObject({
       action: z.literal('list_payment_phases'),
       external_subscription_id: externalSubscriptionId,
     })
-    .extend(listParamsSchema.shape),
-  z.object({
+    .extend(listParams('limit', 'order', 'sort')),
+  z.strictObject({
     action: z.literal('get_payment_phase'),
     external_subscription_id: externalSubscriptionId,
     external_payment_phase_id: idParam('external_payment_phase_id'),
   }),
   z
-    .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .extend(listParamsSchema.shape),
+    .strictObject({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
+    .extend(listParams('sort')),
 ]);
 
 export const externalSubscriptionsTool: ToolDefinition<typeof inputSchema> = {

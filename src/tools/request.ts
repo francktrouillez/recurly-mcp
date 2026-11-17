@@ -35,7 +35,7 @@ const headerValueSchema = z
   .string()
   .refine((v) => !/[\r\n]/.test(v), 'header values must not contain CR or LF');
 
-const inputSchema = z.object({
+const inputSchema = z.strictObject({
   path: pathSchema,
   query: z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]))

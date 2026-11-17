@@ -1,17 +1,20 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), coupon_id: idParam('coupon_id') }),
+  z.strictObject({ action: z.literal('list') }).extend(standardListParams),
+  z.strictObject({ action: z.literal('get'), coupon_id: idParam('coupon_id') }),
   z
-    .object({ action: z.literal('list_unique_coupon_codes'), coupon_id: idParam('coupon_id') })
-    .extend(listParamsSchema.shape)
+    .strictObject({
+      action: z.literal('list_unique_coupon_codes'),
+      coupon_id: idParam('coupon_id'),
+    })
+    .extend(standardListParams)
     .extend({
       redeemed: z.string().optional().describe('Filter by redemption status ("true"/"false").'),
     }),
-  z.object({
+  z.strictObject({
     action: z.literal('get_unique_coupon_code'),
     unique_coupon_code_id: idParam('unique_coupon_code_id'),
   }),

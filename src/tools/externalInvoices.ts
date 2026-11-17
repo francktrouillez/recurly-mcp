@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), external_invoice_id: idParam('external_invoice_id') }),
+  z.strictObject({ action: z.literal('list') }).extend(listParams('limit', 'order', 'sort')),
+  z.strictObject({ action: z.literal('get'), external_invoice_id: idParam('external_invoice_id') }),
   z
-    .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .extend(listParamsSchema.shape),
+    .strictObject({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
+    .extend(listParams('limit', 'order', 'sort')),
 ]);
 
 export const externalInvoicesTool: ToolDefinition<typeof inputSchema> = {
