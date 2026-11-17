@@ -3,7 +3,7 @@
 [![CI](https://github.com/francktrouillez/recurly-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/francktrouillez/recurly-mcp/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/recurly-mcp.svg)](https://www.npmjs.com/package/recurly-mcp)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 
 A **read-only** MCP (Model Context Protocol) server that exposes the [Recurly v2021-02-25 API](https://recurly.com/developers/api/v2021-02-25/index.html) to LLM clients. Works with any MCP-compatible client (Claude Desktop, Claude Code, Cursor, Cline, Codex CLI, Continue.dev, etc.).
 
