@@ -84,7 +84,7 @@ For the EU data region, add `"RECURLY_REGION": "eu"` to `env`.
 
 ## Tools
 
-Every action is read-only. Each tool takes an `action` discriminator plus the parameters for that action.
+Every action is read-only, and every tool advertises this through MCP [tool annotations](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#tool) (`readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true`) plus a human-readable `title`, so clients that honor these hints can display the tools as safe or auto-approve them. Each tool takes an `action` discriminator plus the parameters for that action.
 
 | Tool | Actions |
 |---|---|

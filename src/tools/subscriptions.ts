@@ -29,6 +29,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const subscriptionsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_subscriptions',
+  title: 'Recurly subscriptions',
   description:
     'Recurly subscriptions (read-only). Actions: list, get, get_change (the pending change, if any), get_preview_renewal (a preview of the next renewal invoice), list_invoices, list_line_items, list_for_account. subscription_id accepts a Recurly ID or `uuid-<uuid>`. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

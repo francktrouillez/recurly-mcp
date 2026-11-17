@@ -20,6 +20,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const generalLedgerAccountsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_general_ledger_accounts',
+  title: 'Recurly general ledger accounts',
   description:
     'Recurly general ledger accounts (read-only). Actions: list, get. Returns raw Recurly JSON; list adds a _pagination cursor hint.',
   inputSchema,

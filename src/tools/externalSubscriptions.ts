@@ -31,6 +31,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const externalSubscriptionsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_external_subscriptions',
+  title: 'Recurly external subscriptions',
   description:
     'Recurly external subscriptions (read-only) — subscriptions managed in external app stores. Actions: list, get, list_invoices (external invoices for the subscription), list_payment_phases, get_payment_phase, list_for_account. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

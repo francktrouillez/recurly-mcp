@@ -12,6 +12,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const dunningCampaignsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_dunning_campaigns',
+  title: 'Recurly dunning campaigns',
   description:
     'Recurly dunning campaigns (read-only). Actions: list, get, list_email_templates (custom email templates assignable to dunning intervals; accepts only cursor). Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

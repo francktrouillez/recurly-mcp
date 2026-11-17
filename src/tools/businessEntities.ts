@@ -16,6 +16,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const businessEntitiesTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_business_entities',
+  title: 'Recurly business entities',
   description:
     'Recurly business entities (read-only). Actions: list, get, list_invoices (invoices for a business entity). business_entity_id accepts a Recurly ID or `code-<your_code>`. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

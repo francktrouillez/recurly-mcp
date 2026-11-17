@@ -13,6 +13,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const sitesTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_sites',
+  title: 'Recurly sites',
   description:
     'Recurly sites (read-only). Actions: list (all sites your key can access), get (a single site by ID or `subdomain-<name>`). Returns the raw Recurly JSON payload — no data is removed; list adds a _pagination cursor hint.',
   inputSchema,

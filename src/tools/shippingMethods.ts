@@ -9,6 +9,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const shippingMethodsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_shipping_methods',
+  title: 'Recurly shipping methods',
   description:
     'Recurly shipping methods (read-only). Actions: list, get. shipping_method_id accepts a Recurly ID or `code-<your_code>`. Returns raw Recurly JSON; list adds a _pagination cursor hint.',
   inputSchema,

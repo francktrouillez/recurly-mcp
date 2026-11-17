@@ -15,6 +15,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const creditPaymentsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_credit_payments',
+  title: 'Recurly credit payments',
   description:
     'Recurly credit payments (read-only). Actions: list (site-wide), get (one by ID), list_for_account. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

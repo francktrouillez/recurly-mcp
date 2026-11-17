@@ -46,6 +46,7 @@ const inputSchema = z.strictObject({
 
 export const requestTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_request',
+  title: 'Recurly raw GET request',
   description:
     'Escape hatch: send a raw GET request to any Recurly API endpoint. This server is read-only — only GET is supported, so this cannot mutate data. Use when no resource-specific tool covers what you need (e.g. an endpoint or filter not modeled here). Returns the raw Recurly JSON payload — no data is removed.',
   inputSchema,

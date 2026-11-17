@@ -15,6 +15,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const shippingAddressesTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_shipping_addresses',
+  title: 'Recurly shipping addresses',
   description:
     "Recurly shipping addresses (read-only), scoped to an account. Actions: list (an account's shipping addresses), get (one by ID). Returns raw Recurly JSON; list adds a _pagination cursor hint.",
   inputSchema,

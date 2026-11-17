@@ -15,6 +15,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const externalAccountsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_external_accounts',
+  title: 'Recurly external accounts',
   description:
     "Recurly external accounts (read-only), scoped to an account — links to a customer's identity in an external app store. Actions: list, get. Returns raw Recurly JSON; list adds a _pagination cursor hint.",
   inputSchema,

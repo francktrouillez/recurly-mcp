@@ -17,6 +17,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const lineItemsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_line_items',
+  title: 'Recurly line items',
   description:
     'Recurly line items (read-only). Actions: list (site-wide), get (one by ID), list_for_account. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

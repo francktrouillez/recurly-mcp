@@ -148,6 +148,23 @@ describe('RecurlyClient', () => {
     expect(result).toEqual({ ok: true });
   });
 
+  it('strips method-override headers so a GET cannot become a write upstream', async () => {
+    nock('https://v3.recurly.com', {
+      badheaders: ['x-http-method-override', 'x-http-method', 'x-method-override'],
+    })
+      .get('/accounts/code-x')
+      .reply(200, { ok: true });
+    const client = new RecurlyClient(baseConfig);
+    const result = await client.request('GET', '/accounts/code-x', {
+      headers: {
+        'X-HTTP-Method-Override': 'DELETE',
+        'X-HTTP-Method': 'PUT',
+        'X-Method-Override': 'POST',
+      },
+    });
+    expect(result).toEqual({ ok: true });
+  });
+
   it('refuses to follow a 3xx redirect and never resends auth to the target', async () => {
     nock('https://v3.recurly.com').get('/x').reply(302, '', {
       Location: 'https://evil.example.com/y',

@@ -39,6 +39,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const accountsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_accounts',
+  title: 'Recurly accounts',
   description:
     'Recurly accounts (read-only). Actions: list, get, get_balance, get_acquisition (acquisition cost for an account), list_acquisitions (site-wide acquisition data), list_child_accounts, list_notes, get_note, list_entitlements. account_id accepts a Recurly ID or `code-<your_code>`. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

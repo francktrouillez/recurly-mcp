@@ -7,6 +7,7 @@
 //   2. no top-level `anyOf` / `oneOf` / `allOf` / `$ref`
 //   3. `properties` is an object when present
 //   4. `required`, if present, is a string[]
+// and that every tool carries a non-empty `title` plus read-only annotations.
 //
 // Exit codes: 0 = all tools valid, 1 = validation failures, 2 = setup error.
 //
@@ -19,6 +20,8 @@ import path from 'node:path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SERVER_PATH = path.resolve(__dirname, '..', 'dist', 'bin.js');
 const RPC_TIMEOUT_MS = 5000;
+// Top-level tool `title` was introduced in this protocol revision.
+const PROTOCOL_VERSION = '2025-06-18';
 
 const expectedCount = process.argv[2] ? Number(process.argv[2]) : null;
 
@@ -46,6 +49,32 @@ function validateSchema(schema) {
     const r = schema.required;
     if (!Array.isArray(r) || r.some((x) => typeof x !== 'string')) {
       issues.push('"required" must be an array of strings');
+    }
+  }
+  return issues;
+}
+
+const EXPECTED_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+};
+
+function validateToolMetadata(tool) {
+  const issues = [];
+  if (typeof tool.title !== 'string' || !tool.title.trim()) {
+    issues.push('missing a non-empty top-level "title"');
+  }
+  const a = tool.annotations;
+  if (!a || typeof a !== 'object') {
+    issues.push('missing "annotations"');
+    return issues;
+  }
+  if (a.title !== tool.title) issues.push('"annotations.title" must match "title"');
+  for (const [key, expected] of Object.entries(EXPECTED_ANNOTATIONS)) {
+    if (a[key] !== expected) {
+      issues.push(`"annotations.${key}" must be ${expected} (got ${JSON.stringify(a[key])})`);
     }
   }
   return issues;
@@ -115,13 +144,18 @@ async function main() {
     const init = await rpc.call(
       'initialize',
       {
-        protocolVersion: '2024-11-05',
+        protocolVersion: PROTOCOL_VERSION,
         capabilities: {},
         clientInfo: { name: 'validate-mcp', version: '0.1.0' },
       },
       1,
     );
     if (init.error) throw new Error(`initialize: ${JSON.stringify(init.error)}`);
+    if (init.result?.protocolVersion !== PROTOCOL_VERSION) {
+      throw new Error(
+        `server negotiated protocol ${JSON.stringify(init.result?.protocolVersion)}, expected ${PROTOCOL_VERSION}`,
+      );
+    }
     rpc.notify('notifications/initialized');
 
     const list = await rpc.call('tools/list', {}, 2);
@@ -131,7 +165,7 @@ async function main() {
 
     let failures = 0;
     for (const t of tools) {
-      const issues = validateSchema(t.inputSchema);
+      const issues = [...validateSchema(t.inputSchema), ...validateToolMetadata(t)];
       if (issues.length) {
         console.error(`✗ ${t.name}`);
         for (const i of issues) console.error(`    - ${i}`);
@@ -144,6 +178,12 @@ async function main() {
     console.log(`\n${tools.length - failures}/${tools.length} tools valid`);
     if (expectedCount !== null && tools.length !== expectedCount) {
       console.error(`expected ${expectedCount} tools, got ${tools.length}`);
+      failures++;
+    }
+    const titles = tools.map((t) => t.title);
+    const duplicateTitles = [...new Set(titles.filter((t, i) => titles.indexOf(t) !== i))];
+    if (duplicateTitles.length) {
+      console.error(`duplicate tool titles: ${duplicateTitles.join(', ')}`);
       failures++;
     }
     process.exit(failures === 0 ? 0 : 1);

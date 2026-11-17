@@ -19,6 +19,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const externalProductsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_external_products',
+  title: 'Recurly external products',
   description:
     'Recurly external products (read-only) — products from external app stores (Apple App Store, Google Play). Actions: list, get, list_references (external product references), get_reference. Returns raw Recurly JSON; list actions add a _pagination cursor hint.',
   inputSchema,

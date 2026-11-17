@@ -9,6 +9,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const exportTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_export',
+  title: 'Recurly automated exports',
   description:
     'Recurly automated exports (read-only). Actions: get_dates (the dates that have available export files), get_files (the export files available for a given date; export_date is an ISO date like 2021-06-01). Returns raw Recurly JSON.',
   inputSchema,

@@ -9,6 +9,7 @@ const inputSchema = z.discriminatedUnion('action', [
 
 export const priceSegmentsTool: ToolDefinition<typeof inputSchema> = {
   name: 'recurly_price_segments',
+  title: 'Recurly price segments',
   description:
     'Recurly price segments (read-only). Actions: list, get. Returns raw Recurly JSON; list adds a _pagination cursor hint.',
   inputSchema,

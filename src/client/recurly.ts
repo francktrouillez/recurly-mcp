@@ -92,8 +92,17 @@ async function sleep(ms: number): Promise<void> {
 // header from an LLM survives as a distinct object key and Node's Headers
 // constructor *appends* duplicate-name headers — the wire ends up sending
 // `Authorization: <attacker>, Basic <real_key>`. Stripping host/cookie closes
-// related abuse vectors against the fixed-host destination.
-const RESERVED_HEADERS = new Set(['authorization', 'host', 'cookie']);
+// related abuse vectors against the fixed-host destination. Method-override
+// headers are stripped so a GET can never be reinterpreted as a write upstream,
+// which keeps the tools' advertised `readOnlyHint` honest.
+const RESERVED_HEADERS = new Set([
+  'authorization',
+  'host',
+  'cookie',
+  'x-http-method-override',
+  'x-http-method',
+  'x-method-override',
+]);
 
 function sanitizeUserHeaders(input: Record<string, string> | undefined): Record<string, string> {
   if (!input) return {};
