@@ -222,7 +222,9 @@ export async function createServer(
         annotations: { title: t.title, ...READ_ONLY_HINTS },
       };
     } catch (err) {
-      throw new Error(`${t.name}: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(`${t.name}: ${err instanceof Error ? err.message : String(err)}`, {
+        cause: err,
+      });
     }
   });
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));

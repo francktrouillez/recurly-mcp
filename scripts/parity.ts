@@ -158,7 +158,7 @@ async function deriveAction(
   try {
     input = Object.fromEntries(keys.map((k) => [k, sampleValue(k, fields[k]!)]));
   } catch (err) {
-    throw new Error(`${where}: ${errorMessage(err)}`);
+    throw new Error(`${where}: ${errorMessage(err)}`, { cause: err });
   }
   if (literal !== undefined) input.action = literal;
 
@@ -179,7 +179,9 @@ async function deriveAction(
     // issuing its request (e.g. get_pdf expects PDF bytes). Only a failure before
     // any request means the sample input itself was rejected.
     if (calls.length === 0) {
-      throw new Error(`${where}: handler rejected sample input: ${errorMessage(err)}`);
+      throw new Error(`${where}: handler rejected sample input: ${errorMessage(err)}`, {
+        cause: err,
+      });
     }
   }
   const [call] = calls;
