@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generated with zod 4's built-in `z.toJSONSchema`; `zod-to-json-schema` is no longer a
   dependency. The published tool schemas are unchanged.
 
+### Documentation
+
+- Documented `RECURLY_MAX_OUTPUT_BYTES` and the `_truncated` / `_response_too_large`
+  envelopes. The response size limit shipped in 0.1.0 but was missing from the README
+  and this changelog.
+
 ## [0.1.1] — 2026-06-05
 
 ### Changed
