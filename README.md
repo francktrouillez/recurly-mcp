@@ -47,6 +47,7 @@ All configuration is via environment variables.
 | `RECURLY_API_VERSION` | no | `v2021-02-25` | Recurly API version sent in the `Accept` header. The tool paths/params here are modeled on `v2021-02-25`. |
 | `RECURLY_TIMEOUT_MS` | no | `15000` | Per-request timeout. |
 | `RECURLY_MAX_RETRIES` | no | `2` | Retries on 429 and 5xx (honors `Retry-After`, equal-jitter backoff). |
+| `RECURLY_MAX_OUTPUT_BYTES` | no | `75000` | Max size (UTF-8 bytes of compact JSON) of a single tool result sent to the MCP client. Minimum `1000`. See [Response size limit](#response-size-limit). |
 
 Get a private API key from the Recurly dashboard → Integrations → API Credentials. Use a key scoped to read-only access where possible — this server never writes, but defense in depth is good.
 
@@ -143,6 +144,24 @@ Recurly uses cursor-based pagination. `list` actions accept `limit` (1–200), `
 
 Pass `_pagination.next_cursor` back as `cursor` to fetch the next page.
 
+### Response size limit
+
+MCP clients cap how much a single tool result may contain; past that, the result is spilled to a file and the model loses inline visibility. Every result is therefore capped at `RECURLY_MAX_OUTPUT_BYTES` (default `75000`, roughly 19k tokens):
+
+- **Lists** keep as many leading items as fit and add a `_truncated` object. `has_more`, `next` and `_pagination` are preserved, so paging still works:
+
+  ```json
+  { "object": "list", "data": [ … ], "_pagination": { … },
+    "_truncated": { "reason": "response_exceeded_max_bytes", "max_bytes": 75000,
+                    "returned_items": 42, "omitted_items": 158, "hint": "…" } }
+  ```
+
+  Ask again with a smaller `limit` or narrower filters to see the omitted items.
+- **Single resources** that do not fit are replaced by a `_response_too_large` object carrying `max_bytes`, `actual_bytes`, `object`, `id` and a hint (plus `content_type`/`byte_length` for binary files).
+- **Error messages** are truncated to the same limit.
+
+Raise the limit if your client accepts larger results.
+
 ### Invoice PDFs
 
 `recurly_invoices` `get_pdf` returns the PDF as a base64 wrapper rather than a mangled string:
@@ -150,6 +169,8 @@ Pass `_pagination.next_cursor` back as `cursor` to fetch the next page.
 ```json
 { "object": "binary_file", "content_type": "application/pdf", "encoding": "base64", "byte_length": 12345, "data": "JVBERi0…" }
 ```
+
+Base64 inflates the PDF by about a third, so with the default [response size limit](#response-size-limit) any PDF larger than roughly 55 KB comes back as a `_response_too_large` envelope instead. Raise `RECURLY_MAX_OUTPUT_BYTES` if you need larger PDFs inline.
 
 ### Coverage notes
 
@@ -160,7 +181,7 @@ Pass `_pagination.next_cursor` back as `cursor` to fetch the next page.
 
 ```bash
 npm install
-npm test                 # vitest, 154 tests
+npm test                 # vitest
 npm run typecheck
 npm run lint
 npm run build            # emits dist/
