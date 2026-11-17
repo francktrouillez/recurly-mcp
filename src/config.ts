@@ -1,3 +1,6 @@
+import os from 'node:os';
+import path from 'node:path';
+
 export interface Config {
   apiKey: string;
   host: string;
@@ -5,6 +8,7 @@ export interface Config {
   timeoutMs: number;
   maxRetries: number;
   maxOutputBytes: number;
+  pdfDir: string;
 }
 
 // Recurly's two API regions. The host is the origin only; paths are appended
@@ -104,6 +108,23 @@ function parseApiVersion(raw: string | undefined): string {
   return value;
 }
 
+// Directory `get_pdf` (delivery: file) writes invoice PDFs into. Created lazily
+// on first use (0700). A relative value is resolved against the server's cwd,
+// which MCP clients rarely make obvious — prefer an absolute path.
+function parsePdfDir(raw: string | undefined): string {
+  if (raw === undefined || raw === '') return path.join(os.tmpdir(), 'recurly-mcp');
+  // Reject rather than trim: ' /home/u/pdfs' would otherwise resolve to the
+  // surprising relative path '<cwd>/ /home/u/pdfs'.
+  if (raw.trim() !== raw) {
+    throw new Error('RECURLY_PDF_DIR must not be blank or have leading/trailing whitespace');
+  }
+  if (raw.includes('\0')) throw new Error('RECURLY_PDF_DIR must not contain NUL bytes');
+  // MCP clients spawn servers without a shell, so `~` would otherwise reach us
+  // literally and resolve to `<cwd>/~/...`. Expand the common `~` / `~/...` forms.
+  const home = raw === '~' || /^~[/\\]/.test(raw);
+  return path.resolve(home ? path.join(os.homedir(), raw.slice(1)) : raw);
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv | Record<string, string | undefined>): Config {
   return {
     apiKey: env.RECURLY_API_KEY ?? '',
@@ -124,5 +145,6 @@ export function loadConfig(env: NodeJS.ProcessEnv | Record<string, string | unde
       75000,
       1000,
     ),
+    pdfDir: parsePdfDir(env.RECURLY_PDF_DIR),
   };
 }
