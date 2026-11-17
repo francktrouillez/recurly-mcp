@@ -1,27 +1,15 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { invoiceFilters, lineItemFilters, subscriptionStateFilter } from './filters.js';
 import type { ToolDefinition } from './types.js';
 
 const subscriptionId = idParam('subscription_id');
-
-const invoiceFilters = {
-  state: z.string().optional().describe('Filter by invoice state.'),
-  type: z.string().optional().describe('Filter by invoice type.'),
-};
-
-const lineItemFilters = {
-  original: z.string().optional().describe('Filter by original line-item state.'),
-  state: z.string().optional().describe('Filter by line-item state.'),
-  type: z.string().optional().describe('Filter by line-item type.'),
-};
 
 const inputSchema = z.discriminatedUnion('action', [
   z
     .strictObject({ action: z.literal('list') })
     .extend(standardListParams)
-    .extend({
-      state: z.string().optional().describe('Filter by subscription state, e.g. active.'),
-    }),
+    .extend(subscriptionStateFilter),
   z.strictObject({ action: z.literal('get'), subscription_id: subscriptionId }),
   z.strictObject({ action: z.literal('get_change'), subscription_id: subscriptionId }),
   z.strictObject({ action: z.literal('get_preview_renewal'), subscription_id: subscriptionId }),
@@ -36,9 +24,7 @@ const inputSchema = z.discriminatedUnion('action', [
   z
     .strictObject({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
     .extend(standardListParams)
-    .extend({
-      state: z.string().optional().describe('Filter by subscription state, e.g. active.'),
-    }),
+    .extend(subscriptionStateFilter),
 ]);
 
 export const subscriptionsTool: ToolDefinition<typeof inputSchema> = {

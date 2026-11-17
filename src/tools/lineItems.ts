@@ -1,12 +1,7 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { lineItemFilters } from './filters.js';
 import type { ToolDefinition } from './types.js';
-
-const lineItemFilters = {
-  original: z.string().optional().describe('Filter by original line-item state.'),
-  state: z.string().optional().describe('Filter by line-item state.'),
-  type: z.string().optional().describe('Filter by line-item type, e.g. charge, credit.'),
-};
 
 const inputSchema = z.discriminatedUnion('action', [
   z

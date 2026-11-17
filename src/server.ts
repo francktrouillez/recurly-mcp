@@ -25,36 +25,93 @@ const { version: PKG_VERSION } = require('../package.json') as { version: string
 // happens inside each tool handler via `inputSchema.parse(input)`; branches are
 // strict, so a property that only another action accepts is rejected by name.
 // To keep the model from sending those, a property not shared by every action
-// gets the actions that accept it appended to its description.
+// gets the actions that accept it appended to its description. A property name
+// several actions declare differently (e.g. a subscription vs an invoice
+// `state`) advertises the union of their enum values and tags each meaning with
+// its actions; each branch's zod schema still validates its own exact values.
 
 type JsonObject = Record<string, unknown>;
 
-// Description of a property merged from several branches, given each distinct
-// branch description and the actions using it. One description shared by every
-// action is kept as-is; otherwise each is tagged with its actions, so e.g. a
-// `state` filter reads "list: Filter by subscription state. list_invoices:
-// Filter by invoice state." instead of claiming the first branch's meaning.
-function mergedDescription(
-  byDescription: Map<string, unknown[]>,
-  actionCount: number,
-): string | undefined {
-  const groups = [...byDescription];
-  if (groups.length === 1) {
-    const [description, actions] = groups[0]!;
+// One way a property is declared across branches, and the actions declaring it:
+// its description and enum values, plus the rest of its schema (`base`), which
+// every variant of a property must share.
+interface Variant {
+  base: JsonObject;
+  description: string;
+  values: unknown[] | undefined;
+  actions: unknown[];
+}
+
+// Key-order-insensitive JSON, so equal schemas and enums compare equal.
+const canonical = (value: unknown): string =>
+  JSON.stringify(value, (_key, v: unknown) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : 1)))
+      : v,
+  );
+
+const enumKey = (values: unknown[] | undefined): string =>
+  canonical(values ? [...values].sort() : null);
+
+function toVariant(schema: JsonObject, action: unknown): Variant {
+  const { description, enum: values, ...base } = schema;
+  return {
+    base,
+    description: typeof description === 'string' ? description : '',
+    values: Array.isArray(values) ? values : undefined,
+    actions: [action],
+  };
+}
+
+// Union of every variant's enum values, so no action's values are hidden. If
+// any variant is unconstrained, so is the merged property.
+function mergedEnum(variants: Variant[]): unknown[] | undefined {
+  if (variants.some((v) => v.values === undefined)) return undefined;
+  return [...new Set(variants.flatMap((v) => v.values!))];
+}
+
+// One variant shared by every action keeps its description; one used by only
+// some actions notes them; several are each tagged with their actions (and
+// their values, when those differ), e.g. "list: Filter by subscription state.
+// One of: active, … list_invoices: Filter by invoice state. One of: paid, …".
+function mergedDescription(variants: Variant[], actionCount: number): string | undefined {
+  if (variants.length === 1) {
+    const { description, actions } = variants[0]!;
     if (actions.length === actionCount) return description || undefined;
     const note = `Only for action${actions.length > 1 ? 's' : ''}: ${actions.join(', ')}.`;
     return description ? `${description} ${note}` : note;
   }
-  return groups
-    .map(([description, actions]) => `${actions.join(', ')}: ${description || '(no description)'}`)
+  const enumsDiffer = new Set(variants.map((v) => enumKey(v.values))).size > 1;
+  return variants
+    .map(({ description, values, actions }) => {
+      const valueNote = enumsDiffer && values ? ` One of: ${values.join(', ')}.` : '';
+      return `${actions.join(', ')}: ${description || '(no description)'}${valueNote}`;
+    })
     .join(' ');
+}
+
+// Only descriptions and enum values may differ between actions: anything else
+// (type, bounds, …) can't be advertised faithfully in one flat schema, so it
+// fails loudly at startup instead of silently showing the first action's.
+function mergeProperty(name: string, variants: Variant[], actionCount: number): JsonObject {
+  const base = variants[0]!.base;
+  if (variants.some((v) => canonical(v.base) !== canonical(base))) {
+    throw new Error(`property "${name}" has incompatible schemas across actions`);
+  }
+  const values = mergedEnum(variants);
+  const description = mergedDescription(variants, actionCount);
+  return {
+    ...base,
+    ...(values !== undefined && { enum: values }),
+    ...(description !== undefined && { description }),
+  };
 }
 
 function mergeUnionBranches(branches: unknown[]): JsonObject {
   const properties: JsonObject = {};
   const actionValues: unknown[] = [];
   const requiredCounts: Record<string, number> = {};
-  const descriptions: Record<string, Map<string, unknown[]>> = {};
+  const variants: Record<string, Map<string, Variant>> = {};
   let total = 0;
   for (const branch of branches) {
     if (!branch || typeof branch !== 'object') continue;
@@ -65,12 +122,15 @@ function mergeUnionBranches(branches: unknown[]): JsonObject {
     const action = (branchProps.action as JsonObject | undefined)?.const;
     if (action !== undefined && !actionValues.includes(action)) actionValues.push(action);
     for (const [name, propSchema] of Object.entries(branchProps)) {
-      if (!(name in properties)) properties[name] = propSchema;
-      if (action === undefined || name === 'action') continue;
-      const description = (propSchema as JsonObject).description;
-      const byDescription = (descriptions[name] ??= new Map());
-      const key = typeof description === 'string' ? description : '';
-      byDescription.set(key, [...(byDescription.get(key) ?? []), action]);
+      if (action === undefined || name === 'action') {
+        if (!(name in properties)) properties[name] = propSchema;
+        continue;
+      }
+      const variant = toVariant(propSchema as JsonObject, action);
+      const key = canonical([variant.description, enumKey(variant.values), variant.base]);
+      const byKey = (variants[name] ??= new Map());
+      const seen = byKey.get(key);
+      byKey.set(key, seen ? { ...seen, actions: [...seen.actions, action] } : variant);
     }
     for (const name of (b.required as string[] | undefined) ?? []) {
       requiredCounts[name] = (requiredCounts[name] ?? 0) + 1;
@@ -80,10 +140,8 @@ function mergeUnionBranches(branches: unknown[]): JsonObject {
     const { const: _const, ...rest } = properties.action as JsonObject;
     properties.action = { ...rest, enum: actionValues };
   }
-  for (const [name, byDescription] of Object.entries(descriptions)) {
-    const { description: _first, ...prop } = properties[name] as JsonObject;
-    const description = mergedDescription(byDescription, actionValues.length);
-    properties[name] = description === undefined ? prop : { ...prop, description };
+  for (const [name, byKey] of Object.entries(variants)) {
+    properties[name] = mergeProperty(name, [...byKey.values()], actionValues.length);
   }
   const required = Object.entries(requiredCounts)
     .filter(([, count]) => count === total)
@@ -136,13 +194,19 @@ export async function createServer(
     { capabilities: { tools: {} } },
   );
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: allTools.map((t) => ({
-      name: t.name,
-      description: t.description,
-      inputSchema: toMcpInputSchema(t.inputSchema),
-    })),
-  }));
+  // Tool schemas are static, so convert them once rather than per tools/list.
+  const tools = allTools.map((t) => {
+    try {
+      return {
+        name: t.name,
+        description: t.description,
+        inputSchema: toMcpInputSchema(t.inputSchema),
+      };
+    } catch (err) {
+      throw new Error(`${t.name}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  });
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 
   server.setRequestHandler(CallToolRequestSchema, async (req) => {
     const tool = allTools.find((t) => t.name === req.params.name);

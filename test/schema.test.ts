@@ -44,6 +44,34 @@ describe('toMcpInputSchema (zod 4 → MCP JSON Schema)', () => {
     expect(props.state.description).toBe('list, list_mine: Sub state. list_invoices: Inv state.');
   });
 
+  it('advertises the union of differing per-action enums and tags each with its values', () => {
+    const schema = z.discriminatedUnion('action', [
+      z.strictObject({ action: z.literal('list'), state: z.enum(['active', 'live']) }),
+      z.strictObject({ action: z.literal('list_invoices'), state: z.enum(['paid', 'active']) }),
+    ]);
+    const state = (toMcpInputSchema(schema).properties as Props).state;
+    expect(state.enum).toEqual(['active', 'live', 'paid']);
+    expect(state.description).toBe(
+      'list: (no description) One of: active, live. list_invoices: (no description) One of: paid, active.',
+    );
+  });
+
+  it('drops the enum when another action accepts any value for the property', () => {
+    const schema = z.discriminatedUnion('action', [
+      z.strictObject({ action: z.literal('list'), state: z.enum(['active']) }),
+      z.strictObject({ action: z.literal('list_more'), state: z.string() }),
+    ]);
+    expect((toMcpInputSchema(schema).properties as Props).state).not.toHaveProperty('enum');
+  });
+
+  it('refuses to merge a property whose type differs across actions', () => {
+    const schema = z.discriminatedUnion('action', [
+      z.strictObject({ action: z.literal('list'), subscriber: z.boolean() }),
+      z.strictObject({ action: z.literal('list_more'), subscriber: z.enum(['true']) }),
+    ]);
+    expect(() => toMcpInputSchema(schema)).toThrow(/"subscriber" has incompatible schemas/);
+  });
+
   it('closes nested plain objects but leaves catchall objects open', () => {
     const json = toMcpInputSchema(
       z.object({

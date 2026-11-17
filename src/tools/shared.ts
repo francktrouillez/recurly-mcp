@@ -24,6 +24,12 @@ export const idParam = (label: string) =>
       `${label}: a Recurly object ID or prefixed code (e.g. "code-myplan", "subdomain-acme"). Special characters are URL-encoded automatically.`,
     );
 
+// An optional enum param: the exact values Recurly allows for it.
+export const optionalEnum = <const T extends readonly [string, ...string[]]>(
+  values: T,
+  description: string,
+) => z.enum(values).optional().describe(description);
+
 // Pagination cursor. Every list action accepts it: Recurly hands it back in the
 // `next` link of any list response, whether or not the endpoint documents it.
 const cursor = z
@@ -39,8 +45,11 @@ const cursor = z
 // Resource-specific filters (state, type, …) are merged on top per tool.
 const listParamShapes = {
   limit: z.number().int().min(1).max(200).optional().describe('Page size, 1–200.'),
-  order: z.enum(['asc', 'desc']).optional().describe('Sort direction.'),
-  sort: z.string().max(64).optional().describe('Sort field, typically created_at or updated_at.'),
+  order: optionalEnum(['asc', 'desc'], 'Sort direction.'),
+  sort: optionalEnum(
+    ['created_at', 'updated_at'],
+    'Sort field (ascending updated_at pages most reliably).',
+  ),
   ids: z
     .array(
       z
@@ -52,16 +61,8 @@ const listParamShapes = {
     .max(200)
     .optional()
     .describe('Filter by up to 200 IDs (sent as a comma-separated list).'),
-  begin_time: z
-    .string()
-    .max(64)
-    .optional()
-    .describe('ISO 8601 lower bound (used with sort=created_at|updated_at).'),
-  end_time: z
-    .string()
-    .max(64)
-    .optional()
-    .describe('ISO 8601 upper bound (used with sort=created_at|updated_at).'),
+  begin_time: z.string().max(64).optional().describe('ISO 8601 lower bound on the sort field.'),
+  end_time: z.string().max(64).optional().describe('ISO 8601 upper bound on the sort field.'),
 };
 
 // Shape for a list action: the named common params plus `cursor`. Merge it into

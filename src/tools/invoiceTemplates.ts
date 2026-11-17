@@ -1,20 +1,9 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, listParams, standardListParams } from './shared.js';
+import { accountFilters } from './filters.js';
 import type { ToolDefinition } from './types.js';
 
 const invoiceTemplateId = idParam('invoice_template_id');
-
-const accountFilters = {
-  email: z.string().optional().describe('Filter for accounts with this exact email address.'),
-  subscriber: z
-    .boolean()
-    .optional()
-    .describe('Filter for accounts with (true) or without (false) a subscription.'),
-  past_due: z
-    .string()
-    .optional()
-    .describe('Filter for accounts with an invoice in the past_due state ("true"/"false").'),
-};
 
 const inputSchema = z.discriminatedUnion('action', [
   z.strictObject({ action: z.literal('list') }).extend(listParams('sort')),

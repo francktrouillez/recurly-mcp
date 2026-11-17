@@ -337,3 +337,37 @@ describe('list actions accept exactly the query params their endpoint documents'
     });
   }
 });
+
+// Enum filters accept exactly the values the spec allows for that endpoint;
+// the same param name can allow different values on different endpoints.
+const enumCases: Array<[string, Record<string, unknown>, boolean]> = [
+  ['recurly_subscriptions', { action: 'list', state: 'in_trial' }, true],
+  ['recurly_subscriptions', { action: 'list', state: 'paid' }, false],
+  ['recurly_subscriptions', { action: 'list_invoices', subscription_id: 's', state: 'paid' }, true],
+  ['recurly_subscriptions', { action: 'list_line_items', subscription_id: 's', state: 'paid' }, false],
+  ['recurly_invoices', { action: 'list', type: 'non-legacy' }, true],
+  ['recurly_invoices', { action: 'list_line_items', invoice_id: 'i', type: 'non-legacy' }, false],
+  ['recurly_accounts', { action: 'list', past_due: 'true' }, true],
+  ['recurly_accounts', { action: 'list', past_due: true }, false],
+  ['recurly_accounts', { action: 'list_entitlements', account_id: 'a', state: 'canceled' }, true],
+  ['recurly_accounts', { action: 'list_entitlements', account_id: 'a', state: 'subscribed' }, false],
+  ['recurly_coupons', { action: 'list_unique_coupon_codes', coupon_id: 'c', redeemed: 'false' }, true],
+  ['recurly_transactions', { action: 'list', type: 'payment', success: 'true' }, true],
+  ['recurly_transactions', { action: 'list', success: 'false' }, false],
+  ['recurly_usage', { action: 'list', subscription_id: 's', add_on_id: 'a', sort: 'usage_timestamp' }, true],
+  ['recurly_usage', { action: 'list', subscription_id: 's', add_on_id: 'a', sort: 'created_at' }, false],
+  ['recurly_sites', { action: 'list', sort: 'updated_at', state: 'inactive' }, true],
+  ['recurly_sites', { action: 'list', sort: 'usage_timestamp' }, false],
+];
+
+describe('enum filters', () => {
+  for (const [name, args, ok] of enumCases) {
+    it(`${name}: ${JSON.stringify(args)} is ${ok ? 'accepted' : 'rejected'}`, async () => {
+      const { ctx, calls } = stub();
+      const run = tool(name).handler(ctx, args);
+      if (ok) await expect(run).resolves.toBeDefined();
+      else await expect(run).rejects.toThrow(/invalid_value/);
+      expect(calls).toHaveLength(ok ? 1 : 0);
+    });
+  }
+});

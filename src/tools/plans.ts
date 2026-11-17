@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { activeStateFilter } from './filters.js';
 import type { ToolDefinition } from './types.js';
 
 const planId = idParam('plan_id');
@@ -8,12 +9,12 @@ const inputSchema = z.discriminatedUnion('action', [
   z
     .strictObject({ action: z.literal('list') })
     .extend(standardListParams)
-    .extend({ state: z.string().optional().describe('Filter by state, e.g. active.') }),
+    .extend(activeStateFilter),
   z.strictObject({ action: z.literal('get'), plan_id: planId }),
   z
     .strictObject({ action: z.literal('list_add_ons'), plan_id: planId })
     .extend(standardListParams)
-    .extend({ state: z.string().optional().describe('Filter by state.') }),
+    .extend(activeStateFilter),
   z.strictObject({
     action: z.literal('get_add_on'),
     plan_id: planId,

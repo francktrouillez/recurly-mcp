@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, standardListParams } from './shared.js';
+import { enc, fetchList, idParam, optionalEnum, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
@@ -11,10 +11,14 @@ const inputSchema = z.discriminatedUnion('action', [
     })
     .extend(standardListParams)
     .extend({
-      billing_status: z
-        .string()
-        .optional()
-        .describe('Filter by billing status: unbilled, billed, or all.'),
+      sort: optionalEnum(
+        ['recorded_timestamp', 'usage_timestamp'],
+        'Sort field (default usage_timestamp; usage_timestamp with order=asc pages most reliably).',
+      ),
+      billing_status: optionalEnum(
+        ['unbilled', 'billed', 'all'],
+        'Filter by billing status (default unbilled).',
+      ),
     }),
   z.strictObject({ action: z.literal('get'), usage_id: idParam('usage_id') }),
 ]);
