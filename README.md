@@ -107,7 +107,7 @@ Every action is read-only. Each tool takes an `action` discriminator plus the pa
 | `recurly_shipping_methods` | `list`, `get` |
 | `recurly_usage` | `list`, `get` |
 | `recurly_export` | `get_dates`, `get_files` |
-| `recurly_dunning_campaigns` | `list`, `get` |
+| `recurly_dunning_campaigns` | `list`, `get`, `list_email_templates` |
 | `recurly_invoice_templates` | `list`, `get`, `list_accounts` |
 | `recurly_external_products` | `list`, `get`, `list_references`, `get_reference` |
 | `recurly_external_subscriptions` | `list`, `get`, `list_invoices`, `list_payment_phases`, `get_payment_phase`, `list_for_account` |
@@ -142,7 +142,7 @@ Recurly uses cursor-based pagination. `list` actions accept `limit` (1–200), `
   "_pagination": { "has_more": true, "next_cursor": "…" } }
 ```
 
-Pass `_pagination.next_cursor` back as `cursor` to fetch the next page.
+Pass `_pagination.next_cursor` back as `cursor` to fetch the next page. The exception is `recurly_dunning_campaigns` `list_email_templates`: its endpoint takes no params, so fetch further pages with `recurly_request` (`{ "path": "/dunning_campaigns/email_templates", "query": { "cursor": "<_pagination.next_cursor>" } }`).
 
 ### Response size limit
 
