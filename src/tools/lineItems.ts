@@ -11,12 +11,12 @@ const lineItemFilters = {
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(lineItemFilters),
   z.object({ action: z.literal('get'), line_item_id: idParam('line_item_id') }),
   z
     .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(lineItemFilters),
 ]);
 

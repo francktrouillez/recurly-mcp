@@ -5,7 +5,7 @@ import type { ToolDefinition } from './types.js';
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({ state: z.string().optional().describe('Filter by state.') }),
   z.object({ action: z.literal('get'), measured_unit_id: idParam('measured_unit_id') }),
 ]);

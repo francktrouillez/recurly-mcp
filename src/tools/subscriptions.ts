@@ -18,7 +18,7 @@ const lineItemFilters = {
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({
       state: z.string().optional().describe('Filter by subscription state, e.g. active.'),
     }),
@@ -27,15 +27,15 @@ const inputSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('get_preview_renewal'), subscription_id: subscriptionId }),
   z
     .object({ action: z.literal('list_invoices'), subscription_id: subscriptionId })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(invoiceFilters),
   z
     .object({ action: z.literal('list_line_items'), subscription_id: subscriptionId })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(lineItemFilters),
   z
     .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({
       state: z.string().optional().describe('Filter by subscription state, e.g. active.'),
     }),

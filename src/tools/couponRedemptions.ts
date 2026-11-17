@@ -8,7 +8,7 @@ const couponRedemptionId = idParam('coupon_redemption_id');
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list_for_account'), account_id: accountId })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({ state: z.string().optional().describe('Filter by state, e.g. active or inactive.') }),
   z.object({ action: z.literal('list_active_for_account'), account_id: accountId }),
   z.object({
@@ -18,13 +18,13 @@ const inputSchema = z.discriminatedUnion('action', [
   }),
   z
     .object({ action: z.literal('list_for_invoice'), invoice_id: idParam('invoice_id') })
-    .merge(listParamsSchema),
+    .extend(listParamsSchema.shape),
   z
     .object({
       action: z.literal('list_for_subscription'),
       subscription_id: idParam('subscription_id'),
     })
-    .merge(listParamsSchema),
+    .extend(listParamsSchema.shape),
   z.object({
     action: z.literal('get_for_subscription'),
     subscription_id: idParam('subscription_id'),

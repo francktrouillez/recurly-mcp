@@ -17,11 +17,11 @@ const accountFilters = {
 };
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).merge(listParamsSchema),
+  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
   z.object({ action: z.literal('get'), invoice_template_id: invoiceTemplateId }),
   z
     .object({ action: z.literal('list_accounts'), invoice_template_id: invoiceTemplateId })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(accountFilters),
 ]);
 

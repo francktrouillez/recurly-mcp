@@ -3,11 +3,11 @@ import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).merge(listParamsSchema),
+  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
   z.object({ action: z.literal('get'), external_invoice_id: idParam('external_invoice_id') }),
   z
     .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .merge(listParamsSchema),
+    .extend(listParamsSchema.shape),
 ]);
 
 export const externalInvoicesTool: ToolDefinition<typeof inputSchema> = {

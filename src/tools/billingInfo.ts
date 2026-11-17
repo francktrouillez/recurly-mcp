@@ -6,7 +6,7 @@ const accountId = idParam('account_id');
 
 const inputSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('get'), account_id: accountId }),
-  z.object({ action: z.literal('list'), account_id: accountId }).merge(listParamsSchema),
+  z.object({ action: z.literal('list'), account_id: accountId }).extend(listParamsSchema.shape),
   z.object({
     action: z.literal('get_one'),
     account_id: accountId,

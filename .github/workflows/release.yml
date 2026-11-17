@@ -36,7 +36,8 @@ jobs:
 
       # ci.yml triggers on push-to-main / PRs, not on release events,
       # so run the full quality gate here before publishing.
-      - run: npm audit --audit-level=high
+      # Same audit policy as ci.yml: block on runtime deps only.
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

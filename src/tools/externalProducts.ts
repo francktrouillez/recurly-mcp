@@ -5,11 +5,11 @@ import type { ToolDefinition } from './types.js';
 const externalProductId = idParam('external_product_id');
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).merge(listParamsSchema),
+  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
   z.object({ action: z.literal('get'), external_product_id: externalProductId }),
   z
     .object({ action: z.literal('list_references'), external_product_id: externalProductId })
-    .merge(listParamsSchema),
+    .extend(listParamsSchema.shape),
   z.object({
     action: z.literal('get_reference'),
     external_product_id: externalProductId,

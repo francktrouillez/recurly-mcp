@@ -19,17 +19,19 @@ const accountFilters = {
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(accountFilters),
   z.object({ action: z.literal('get'), account_id: accountId }),
   z.object({ action: z.literal('get_balance'), account_id: accountId }),
   z.object({ action: z.literal('get_acquisition'), account_id: accountId }),
-  z.object({ action: z.literal('list_acquisitions') }).merge(listParamsSchema),
+  z.object({ action: z.literal('list_acquisitions') }).extend(listParamsSchema.shape),
   z
     .object({ action: z.literal('list_child_accounts'), account_id: accountId })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(accountFilters),
-  z.object({ action: z.literal('list_notes'), account_id: accountId }).merge(listParamsSchema),
+  z
+    .object({ action: z.literal('list_notes'), account_id: accountId })
+    .extend(listParamsSchema.shape),
   z.object({
     action: z.literal('get_note'),
     account_id: accountId,
@@ -37,7 +39,7 @@ const inputSchema = z.discriminatedUnion('action', [
   }),
   z
     .object({ action: z.literal('list_entitlements'), account_id: accountId })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({ state: z.string().optional().describe('Filter by state, e.g. subscribed.') }),
 ]);
 
