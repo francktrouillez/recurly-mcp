@@ -10,12 +10,12 @@ const transactionFilters = {
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(transactionFilters),
   z.object({ action: z.literal('get'), transaction_id: idParam('transaction_id') }),
   z
     .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(transactionFilters),
 ]);
 

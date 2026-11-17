@@ -9,7 +9,7 @@ const inputSchema = z.discriminatedUnion('action', [
       subscription_id: idParam('subscription_id'),
       add_on_id: idParam('add_on_id'),
     })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({
       billing_status: z
         .string()

@@ -5,12 +5,9 @@ import type { ToolDefinition } from './types.js';
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({
-      related_type: z
-        .string()
-        .optional()
-        .describe('Filter by related type, e.g. account or item.'),
+      related_type: z.string().optional().describe('Filter by related type, e.g. account or item.'),
     }),
   z.object({
     action: z.literal('get'),

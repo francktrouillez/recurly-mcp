@@ -3,7 +3,7 @@ import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).merge(listParamsSchema),
+  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
   z.object({ action: z.literal('get'), shipping_method_id: idParam('shipping_method_id') }),
 ]);
 

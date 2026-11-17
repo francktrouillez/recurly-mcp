@@ -9,7 +9,9 @@ import type { ToolDefinition } from './types.js';
 // attached. Reject any `..` segment after percent-decoding to close the bypass.
 const pathSchema = z
   .string()
-  .startsWith('/', 'path must start with / (a Recurly API path)')
+  // `.regex` rather than `.startsWith`: zod 4 tags the latter with a
+  // non-standard JSON Schema `format` that strict validators reject.
+  .regex(/^\//, 'path must start with / (a Recurly API path)')
   .refine((p) => {
     // Decode repeatedly until stable so multiply-encoded traversal
     // (e.g. `%252e%252e`) cannot slip a `..` segment past this check.
@@ -36,10 +38,10 @@ const headerValueSchema = z
 const inputSchema = z.object({
   path: pathSchema,
   query: z
-    .record(z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]))
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]))
     .optional()
     .describe('Query parameters. Arrays are serialized as comma-separated values.'),
-  headers: z.record(headerValueSchema).optional(),
+  headers: z.record(z.string(), headerValueSchema).optional(),
 });
 
 export const requestTool: ToolDefinition<typeof inputSchema> = {

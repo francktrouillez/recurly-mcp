@@ -7,12 +7,12 @@ const planId = idParam('plan_id');
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({ state: z.string().optional().describe('Filter by state, e.g. active.') }),
   z.object({ action: z.literal('get'), plan_id: planId }),
   z
     .object({ action: z.literal('list_add_ons'), plan_id: planId })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({ state: z.string().optional().describe('Filter by state.') }),
   z.object({ action: z.literal('get_add_on'), plan_id: planId, add_on_id: idParam('add_on_id') }),
 ]);

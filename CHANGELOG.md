@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Upgraded `@modelcontextprotocol/sdk` to `^1.32.2` (GHSA-6qxp-vccf-f47h and related
+  advisories) and `zod` to `^4.6.7` (GHSA-mrhx-c7xc-m3w5). Tool input schemas are now
+  generated with zod 4's built-in `z.toJSONSchema`; `zod-to-json-schema` is no longer a
+  dependency. The published tool schemas are unchanged.
+
 ## [0.1.1] — 2026-06-05
 
 ### Changed

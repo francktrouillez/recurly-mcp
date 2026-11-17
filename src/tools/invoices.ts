@@ -18,18 +18,20 @@ const lineItemFilters = {
 const inputSchema = z.discriminatedUnion('action', [
   z
     .object({ action: z.literal('list') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(invoiceFilters),
   z.object({ action: z.literal('get'), invoice_id: invoiceId }),
   z.object({ action: z.literal('get_pdf'), invoice_id: invoiceId }),
   z
     .object({ action: z.literal('list_line_items'), invoice_id: invoiceId })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(lineItemFilters),
-  z.object({ action: z.literal('list_related'), invoice_id: invoiceId }).merge(listParamsSchema),
+  z
+    .object({ action: z.literal('list_related'), invoice_id: invoiceId })
+    .extend(listParamsSchema.shape),
   z
     .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend(invoiceFilters),
 ]);
 

@@ -2,8 +2,7 @@ import { createRequire } from 'node:module';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import type { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { z } from 'zod';
 import { RecurlyClient } from './client/recurly.js';
 import { loadConfig } from './config.js';
 import { shapeResult } from './responseGuard.js';
@@ -18,8 +17,8 @@ const require = createRequire(import.meta.url);
 const { version: PKG_VERSION } = require('../package.json') as { version: string };
 
 // MCP clients (notably Claude) reject tool inputSchemas that use top-level
-// `anyOf` / `oneOf` / `allOf`. Zod's `discriminatedUnion` compiles to
-// `{anyOf: [...]}`, so we flatten the branches into a single object schema:
+// `anyOf` / `oneOf` / `allOf`. Zod 4 compiles `discriminatedUnion` to
+// `{oneOf: [...]}`, so we flatten the branches into a single object schema:
 // all properties unioned, the `action` discriminator becomes an enum, and
 // `required` is the intersection across branches (since branch-specific
 // requireds aren't enforceable at the top level). Runtime validation still
@@ -27,8 +26,9 @@ const { version: PKG_VERSION } = require('../package.json') as { version: string
 
 type JsonObject = Record<string, unknown>;
 
-function mergeAnyOf(branches: unknown[]): JsonObject {
+function mergeUnionBranches(branches: unknown[]): JsonObject {
   const properties: JsonObject = {};
+  const actionValues: unknown[] = [];
   const requiredCounts: Record<string, number> = {};
   let total = 0;
   for (const branch of branches) {
@@ -38,27 +38,19 @@ function mergeAnyOf(branches: unknown[]): JsonObject {
     total++;
     const branchProps = (b.properties as JsonObject | undefined) ?? {};
     for (const [name, propSchema] of Object.entries(branchProps)) {
-      if (!(name in properties)) {
-        properties[name] = JSON.parse(JSON.stringify(propSchema));
-        continue;
-      }
       if (name === 'action') {
-        const existing = properties[name] as JsonObject;
-        const incoming = propSchema as JsonObject;
-        const incomingVal = incoming.const;
-        if (incomingVal === undefined) continue;
-        if (Array.isArray(existing.enum)) {
-          if (!existing.enum.includes(incomingVal)) existing.enum.push(incomingVal);
-        } else if (existing.const !== undefined) {
-          const old = existing.const;
-          delete existing.const;
-          existing.enum = [old, incomingVal];
-        }
+        const value = (propSchema as JsonObject).const;
+        if (value !== undefined && !actionValues.includes(value)) actionValues.push(value);
       }
+      if (!(name in properties)) properties[name] = propSchema;
     }
     for (const name of (b.required as string[] | undefined) ?? []) {
       requiredCounts[name] = (requiredCounts[name] ?? 0) + 1;
     }
+  }
+  if (properties.action) {
+    const { const: _const, ...rest } = properties.action as JsonObject;
+    properties.action = { ...rest, enum: actionValues };
   }
   const required = Object.entries(requiredCounts)
     .filter(([, count]) => count === total)
@@ -68,13 +60,17 @@ function mergeAnyOf(branches: unknown[]): JsonObject {
   return result;
 }
 
-export function toMcpInputSchema(schema: z.ZodTypeAny): JsonObject {
-  const json = zodToJsonSchema(schema, {
-    target: 'jsonSchema7',
-    $refStrategy: 'none',
+export function toMcpInputSchema(schema: z.ZodType): JsonObject {
+  // `io: 'output'` closes every plain object (`additionalProperties: false`),
+  // matching how the parser drops unknown keys. Caveat: output mode marks
+  // `.default()` fields as required, so revisit this if a tool input gains one.
+  // `reused: 'inline'` avoids $defs/$ref so every schema is self-contained.
+  const { $schema: _schemaUri, ...json } = z.toJSONSchema(schema, {
+    target: 'draft-7',
+    io: 'output',
+    reused: 'inline',
   }) as JsonObject;
-  if (Array.isArray(json.anyOf)) return mergeAnyOf(json.anyOf);
-  if (json.type === 'object') return json;
+  if (Array.isArray(json.oneOf)) return mergeUnionBranches(json.oneOf);
   return { type: 'object', ...json };
 }
 

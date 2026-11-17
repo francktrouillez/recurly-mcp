@@ -3,11 +3,11 @@ import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).merge(listParamsSchema),
+  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
   z.object({ action: z.literal('get'), coupon_id: idParam('coupon_id') }),
   z
     .object({ action: z.literal('list_unique_coupon_codes'), coupon_id: idParam('coupon_id') })
-    .merge(listParamsSchema)
+    .extend(listParamsSchema.shape)
     .extend({
       redeemed: z.string().optional().describe('Filter by redemption status ("true"/"false").'),
     }),

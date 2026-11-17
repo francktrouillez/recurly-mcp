@@ -5,17 +5,20 @@ import type { ToolDefinition } from './types.js';
 const externalSubscriptionId = idParam('external_subscription_id');
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).merge(listParamsSchema),
+  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
   z.object({ action: z.literal('get'), external_subscription_id: externalSubscriptionId }),
   z
-    .object({ action: z.literal('list_invoices'), external_subscription_id: externalSubscriptionId })
-    .merge(listParamsSchema),
+    .object({
+      action: z.literal('list_invoices'),
+      external_subscription_id: externalSubscriptionId,
+    })
+    .extend(listParamsSchema.shape),
   z
     .object({
       action: z.literal('list_payment_phases'),
       external_subscription_id: externalSubscriptionId,
     })
-    .merge(listParamsSchema),
+    .extend(listParamsSchema.shape),
   z.object({
     action: z.literal('get_payment_phase'),
     external_subscription_id: externalSubscriptionId,
@@ -23,7 +26,7 @@ const inputSchema = z.discriminatedUnion('action', [
   }),
   z
     .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .merge(listParamsSchema),
+    .extend(listParamsSchema.shape),
 ]);
 
 export const externalSubscriptionsTool: ToolDefinition<typeof inputSchema> = {
