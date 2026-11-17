@@ -1,0 +1,28 @@
+name: spec-parity
+on:
+  schedule:
+    # Weekly, Monday 06:00 UTC.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+# Read-only: the job only fetches Recurly's public OpenAPI spec and compares it
+# against our tool registry.
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Fails (exit 1) when Recurly's spec has a GET endpoint or query param our
+      # tools don't cover. A failing scheduled run is the drift alert.
+      - run: npm run parity
