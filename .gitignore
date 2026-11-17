@@ -8,3 +8,7 @@ coverage
 !.env.example
 *.pem
 *.key
+
+# Local agent artifacts — never committed
+docs/superpowers/
+.claude/worktrees/
