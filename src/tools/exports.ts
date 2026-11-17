@@ -3,8 +3,8 @@ import { enc, idParam } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('get_dates') }),
-  z.object({ action: z.literal('get_files'), export_date: idParam('export_date') }),
+  z.strictObject({ action: z.literal('get_dates') }),
+  z.strictObject({ action: z.literal('get_files'), export_date: idParam('export_date') }),
 ]);
 
 export const exportTool: ToolDefinition<typeof inputSchema> = {

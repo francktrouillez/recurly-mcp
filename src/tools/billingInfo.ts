@@ -1,13 +1,15 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const accountId = idParam('account_id');
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('get'), account_id: accountId }),
-  z.object({ action: z.literal('list'), account_id: accountId }).extend(listParamsSchema.shape),
-  z.object({
+  z.strictObject({ action: z.literal('get'), account_id: accountId }),
+  z
+    .strictObject({ action: z.literal('list'), account_id: accountId })
+    .extend(listParams('sort', 'ids', 'begin_time', 'end_time')),
+  z.strictObject({
     action: z.literal('get_one'),
     account_id: accountId,
     billing_info_id: idParam('billing_info_id'),

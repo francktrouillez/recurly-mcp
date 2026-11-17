@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { enc, idParam, listParamsSchema, listQuery, fetchList } from '../../src/tools/shared.js';
+import { z } from 'zod';
+import {
+  enc,
+  idParam,
+  listParams,
+  standardListParams,
+  listQuery,
+  fetchList,
+} from '../../src/tools/shared.js';
 import type { ToolContext } from '../../src/tools/types.js';
 
 describe('enc', () => {
@@ -26,7 +34,24 @@ describe('idParam', () => {
   });
 });
 
-describe('listParamsSchema', () => {
+describe('listParams', () => {
+  it('picks only the named params, always adding cursor', () => {
+    expect(Object.keys(listParams()).sort()).toEqual(['cursor']);
+    expect(Object.keys(listParams('sort', 'ids')).sort()).toEqual(['cursor', 'ids', 'sort']);
+    expect(Object.keys(standardListParams).sort()).toEqual([
+      'begin_time',
+      'cursor',
+      'end_time',
+      'ids',
+      'limit',
+      'order',
+      'sort',
+    ]);
+  });
+});
+
+describe('standardListParams', () => {
+  const listParamsSchema = z.object(standardListParams);
   it('bounds limit to 1..200 and accepts order/sort/cursor', () => {
     expect(() => listParamsSchema.parse({ limit: 0 })).toThrow();
     expect(() => listParamsSchema.parse({ limit: 201 })).toThrow();

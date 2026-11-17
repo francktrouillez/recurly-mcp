@@ -22,14 +22,39 @@ const { version: PKG_VERSION } = require('../package.json') as { version: string
 // all properties unioned, the `action` discriminator becomes an enum, and
 // `required` is the intersection across branches (since branch-specific
 // requireds aren't enforceable at the top level). Runtime validation still
-// happens inside each tool handler via `inputSchema.parse(input)`.
+// happens inside each tool handler via `inputSchema.parse(input)`; branches are
+// strict, so a property that only another action accepts is rejected by name.
+// To keep the model from sending those, a property not shared by every action
+// gets the actions that accept it appended to its description.
 
 type JsonObject = Record<string, unknown>;
+
+// Description of a property merged from several branches, given each distinct
+// branch description and the actions using it. One description shared by every
+// action is kept as-is; otherwise each is tagged with its actions, so e.g. a
+// `state` filter reads "list: Filter by subscription state. list_invoices:
+// Filter by invoice state." instead of claiming the first branch's meaning.
+function mergedDescription(
+  byDescription: Map<string, unknown[]>,
+  actionCount: number,
+): string | undefined {
+  const groups = [...byDescription];
+  if (groups.length === 1) {
+    const [description, actions] = groups[0]!;
+    if (actions.length === actionCount) return description || undefined;
+    const note = `Only for action${actions.length > 1 ? 's' : ''}: ${actions.join(', ')}.`;
+    return description ? `${description} ${note}` : note;
+  }
+  return groups
+    .map(([description, actions]) => `${actions.join(', ')}: ${description || '(no description)'}`)
+    .join(' ');
+}
 
 function mergeUnionBranches(branches: unknown[]): JsonObject {
   const properties: JsonObject = {};
   const actionValues: unknown[] = [];
   const requiredCounts: Record<string, number> = {};
+  const descriptions: Record<string, Map<string, unknown[]>> = {};
   let total = 0;
   for (const branch of branches) {
     if (!branch || typeof branch !== 'object') continue;
@@ -37,12 +62,15 @@ function mergeUnionBranches(branches: unknown[]): JsonObject {
     if (b.type !== 'object') continue;
     total++;
     const branchProps = (b.properties as JsonObject | undefined) ?? {};
+    const action = (branchProps.action as JsonObject | undefined)?.const;
+    if (action !== undefined && !actionValues.includes(action)) actionValues.push(action);
     for (const [name, propSchema] of Object.entries(branchProps)) {
-      if (name === 'action') {
-        const value = (propSchema as JsonObject).const;
-        if (value !== undefined && !actionValues.includes(value)) actionValues.push(value);
-      }
       if (!(name in properties)) properties[name] = propSchema;
+      if (action === undefined || name === 'action') continue;
+      const description = (propSchema as JsonObject).description;
+      const byDescription = (descriptions[name] ??= new Map());
+      const key = typeof description === 'string' ? description : '';
+      byDescription.set(key, [...(byDescription.get(key) ?? []), action]);
     }
     for (const name of (b.required as string[] | undefined) ?? []) {
       requiredCounts[name] = (requiredCounts[name] ?? 0) + 1;
@@ -51,6 +79,11 @@ function mergeUnionBranches(branches: unknown[]): JsonObject {
   if (properties.action) {
     const { const: _const, ...rest } = properties.action as JsonObject;
     properties.action = { ...rest, enum: actionValues };
+  }
+  for (const [name, byDescription] of Object.entries(descriptions)) {
+    const { description: _first, ...prop } = properties[name] as JsonObject;
+    const description = mergedDescription(byDescription, actionValues.length);
+    properties[name] = description === undefined ? prop : { ...prop, description };
   }
   const required = Object.entries(requiredCounts)
     .filter(([, count]) => count === total)
@@ -62,8 +95,9 @@ function mergeUnionBranches(branches: unknown[]): JsonObject {
 
 export function toMcpInputSchema(schema: z.ZodType): JsonObject {
   // `io: 'output'` closes every plain object (`additionalProperties: false`),
-  // matching how the parser drops unknown keys. Caveat: output mode marks
-  // `.default()` fields as required, so revisit this if a tool input gains one.
+  // matching the parser, which rejects (strict branches) or strips unknown keys.
+  // Caveat: output mode marks `.default()` fields as required, so revisit this
+  // if a tool input gains one.
   // `reused: 'inline'` avoids $defs/$ref so every schema is self-contained.
   const { $schema: _schemaUri, ...json } = z.toJSONSchema(schema, {
     target: 'draft-7',
@@ -72,6 +106,15 @@ export function toMcpInputSchema(schema: z.ZodType): JsonObject {
   }) as JsonObject;
   if (Array.isArray(json.oneOf)) return mergeUnionBranches(json.oneOf);
   return { type: 'object', ...json };
+}
+
+// A ZodError's own message is a JSON dump of its issues; prettify it so the
+// client reads e.g. `✖ Unrecognized key: "begin_time"` for an unsupported param.
+function errorMessage(err: unknown, toolName: string): string {
+  if (err instanceof z.ZodError)
+    return `Invalid arguments for ${toolName}:\n${z.prettifyError(err)}`;
+  if (err instanceof Error) return err.message;
+  return String(err);
 }
 
 export async function createServer(
@@ -115,7 +158,7 @@ export async function createServer(
     } catch (err) {
       // Cap the error text too: the success path goes through shapeResult, but
       // an error message can also carry upstream content, so bound it the same way.
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err, tool.name);
       const text =
         message.length > config.maxOutputBytes
           ? `${message.slice(0, config.maxOutputBytes)}…[truncated]`

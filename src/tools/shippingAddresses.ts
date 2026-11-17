@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const accountId = idParam('account_id');
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list'), account_id: accountId }).extend(listParamsSchema.shape),
-  z.object({
+  z.strictObject({ action: z.literal('list'), account_id: accountId }).extend(standardListParams),
+  z.strictObject({
     action: z.literal('get'),
     account_id: accountId,
     shipping_address_id: idParam('shipping_address_id'),

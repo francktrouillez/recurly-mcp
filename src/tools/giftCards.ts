@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), gift_card_id: idParam('gift_card_id') }),
+  z.strictObject({ action: z.literal('list') }).extend(listParams()),
+  z.strictObject({ action: z.literal('get'), gift_card_id: idParam('gift_card_id') }),
 ]);
 
 export const giftCardsTool: ToolDefinition<typeof inputSchema> = {

@@ -1,13 +1,16 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
+// Both list endpoints document the same query params.
+const creditPaymentListParams = listParams('limit', 'order', 'sort', 'begin_time', 'end_time');
+
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), credit_payment_id: idParam('credit_payment_id') }),
+  z.strictObject({ action: z.literal('list') }).extend(creditPaymentListParams),
+  z.strictObject({ action: z.literal('get'), credit_payment_id: idParam('credit_payment_id') }),
   z
-    .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .extend(listParamsSchema.shape),
+    .strictObject({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
+    .extend(creditPaymentListParams),
 ]);
 
 export const creditPaymentsTool: ToolDefinition<typeof inputSchema> = {

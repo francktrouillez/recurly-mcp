@@ -90,6 +90,25 @@ describe('MCP server integration', () => {
     expect(result.isError).toBe(true);
   });
 
+  it('returns a readable validation error naming an unsupported param', async () => {
+    const server = await createServer({ RECURLY_API_KEY: 'k' });
+    const handler = getHandler(server, CallToolRequestSchema.shape.method.value);
+    const result = (await handler(
+      {
+        method: 'tools/call',
+        params: {
+          name: 'recurly_gift_cards',
+          arguments: { action: 'list', begin_time: '2024-01-01' },
+        },
+      },
+      {},
+    )) as { isError: boolean; content: { text: string }[] };
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toBe(
+      'Invalid arguments for recurly_gift_cards:\n✖ Unrecognized key: "begin_time"',
+    );
+  });
+
   it('truncates an oversized list result and emits compact JSON', async () => {
     const data = Array.from({ length: 50 }, (_, i) => ({ id: `s${i}`, blob: 'x'.repeat(500) }));
     nock('https://v3.recurly.com')

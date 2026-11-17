@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), price_segment_id: idParam('price_segment_id') }),
+  z.strictObject({ action: z.literal('list') }).extend(listParams('limit', 'order', 'ids')),
+  z.strictObject({ action: z.literal('get'), price_segment_id: idParam('price_segment_id') }),
 ]);
 
 export const priceSegmentsTool: ToolDefinition<typeof inputSchema> = {

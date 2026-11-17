@@ -135,14 +135,14 @@ Values are URL-encoded before interpolation, so codes containing special charact
 
 ### Pagination
 
-Recurly uses cursor-based pagination. `list` actions accept `limit` (1–200), `order` (`asc`/`desc`), `sort`, `cursor`, `ids`, `begin_time`, `end_time`, plus resource-specific filters (`state`, `type`, etc.). Responses include Recurly's native `has_more`/`next`, and this server adds a `_pagination` hint:
+Recurly uses cursor-based pagination. Each `list` action accepts exactly the query params Recurly documents for its endpoint, so they vary per endpoint: most take `limit` (1–200), `order` (`asc`/`desc`), `sort`, `ids`, `begin_time` and `end_time`, plus resource-specific filters (`state`, `type`, etc.), but some take only a subset (e.g. `recurly_billing_info` `list` has no `limit`/`order`, and `recurly_gift_cards` `list` takes no filters at all). Every `list` action accepts `cursor`. A param the endpoint does not support is rejected with a validation error naming it, rather than silently ignored. Responses include Recurly's native `has_more`/`next`, and this server adds a `_pagination` hint:
 
 ```json
 { "object": "list", "has_more": true, "next": "/accounts?cursor=…", "data": [ … ],
   "_pagination": { "has_more": true, "next_cursor": "…" } }
 ```
 
-Pass `_pagination.next_cursor` back as `cursor` to fetch the next page. The exception is `recurly_dunning_campaigns` `list_email_templates`: its endpoint takes no params, so fetch further pages with `recurly_request` (`{ "path": "/dunning_campaigns/email_templates", "query": { "cursor": "<_pagination.next_cursor>" } }`).
+Pass `_pagination.next_cursor` back as `cursor` to fetch the next page.
 
 ### Response size limit
 

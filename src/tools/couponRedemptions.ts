@@ -1,31 +1,34 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const accountId = idParam('account_id');
 const couponRedemptionId = idParam('coupon_redemption_id');
 
+// All three redemption list endpoints document the same query params.
+const redemptionListParams = listParams('sort', 'ids', 'begin_time', 'end_time');
+
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list_for_account'), account_id: accountId })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_for_account'), account_id: accountId })
+    .extend(redemptionListParams)
     .extend({ state: z.string().optional().describe('Filter by state, e.g. active or inactive.') }),
-  z.object({ action: z.literal('list_active_for_account'), account_id: accountId }),
-  z.object({
+  z.strictObject({ action: z.literal('list_active_for_account'), account_id: accountId }),
+  z.strictObject({
     action: z.literal('get_for_account'),
     account_id: accountId,
     coupon_redemption_id: couponRedemptionId,
   }),
   z
-    .object({ action: z.literal('list_for_invoice'), invoice_id: idParam('invoice_id') })
-    .extend(listParamsSchema.shape),
+    .strictObject({ action: z.literal('list_for_invoice'), invoice_id: idParam('invoice_id') })
+    .extend(redemptionListParams),
   z
-    .object({
+    .strictObject({
       action: z.literal('list_for_subscription'),
       subscription_id: idParam('subscription_id'),
     })
-    .extend(listParamsSchema.shape),
-  z.object({
+    .extend(redemptionListParams),
+  z.strictObject({
     action: z.literal('get_for_subscription'),
     subscription_id: idParam('subscription_id'),
     coupon_redemption_id: couponRedemptionId,

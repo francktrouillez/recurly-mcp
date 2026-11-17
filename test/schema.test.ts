@@ -18,6 +18,32 @@ describe('toMcpInputSchema (zod 4 → MCP JSON Schema)', () => {
     expect(json.required).toEqual(['action']);
   });
 
+  it('notes which actions accept a property not shared by every action', () => {
+    const limit = z.number().describe('Page size.');
+    const schema = z.discriminatedUnion('action', [
+      z.strictObject({ action: z.literal('list'), limit }),
+      z.strictObject({ action: z.literal('list_more'), limit, id: z.string() }),
+      z.strictObject({ action: z.literal('get'), id: z.string() }),
+    ]);
+    const props = toMcpInputSchema(schema).properties as Props;
+    expect(props.limit.description).toBe('Page size. Only for actions: list, list_more.');
+    expect(props.id.description).toBe('Only for actions: list_more, get.');
+    expect(props.action).not.toHaveProperty('description');
+  });
+
+  it('tags each distinct description of a shared property with its actions', () => {
+    const schema = z.discriminatedUnion('action', [
+      z.strictObject({ action: z.literal('list'), state: z.string().describe('Sub state.') }),
+      z.strictObject({
+        action: z.literal('list_invoices'),
+        state: z.string().describe('Inv state.'),
+      }),
+      z.strictObject({ action: z.literal('list_mine'), state: z.string().describe('Sub state.') }),
+    ]);
+    const props = toMcpInputSchema(schema).properties as Props;
+    expect(props.state.description).toBe('list, list_mine: Sub state. list_invoices: Inv state.');
+  });
+
   it('closes nested plain objects but leaves catchall objects open', () => {
     const json = toMcpInputSchema(
       z.object({

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const businessEntityId = idParam('business_entity_id');
@@ -10,11 +10,11 @@ const invoiceFilters = {
 };
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), business_entity_id: businessEntityId }),
+  z.strictObject({ action: z.literal('list') }).extend(listParams()),
+  z.strictObject({ action: z.literal('get'), business_entity_id: businessEntityId }),
   z
-    .object({ action: z.literal('list_invoices'), business_entity_id: businessEntityId })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_invoices'), business_entity_id: businessEntityId })
+    .extend(standardListParams)
     .extend(invoiceFilters),
 ]);
 

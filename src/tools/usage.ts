@@ -1,22 +1,22 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({
+    .strictObject({
       action: z.literal('list'),
       subscription_id: idParam('subscription_id'),
       add_on_id: idParam('add_on_id'),
     })
-    .extend(listParamsSchema.shape)
+    .extend(standardListParams)
     .extend({
       billing_status: z
         .string()
         .optional()
         .describe('Filter by billing status: unbilled, billed, or all.'),
     }),
-  z.object({ action: z.literal('get'), usage_id: idParam('usage_id') }),
+  z.strictObject({ action: z.literal('get'), usage_id: idParam('usage_id') }),
 ]);
 
 export const usageTool: ToolDefinition<typeof inputSchema> = {

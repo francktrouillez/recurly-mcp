@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const transactionFilters = {
@@ -9,13 +9,13 @@ const transactionFilters = {
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(standardListParams)
     .extend(transactionFilters),
-  z.object({ action: z.literal('get'), transaction_id: idParam('transaction_id') }),
+  z.strictObject({ action: z.literal('get'), transaction_id: idParam('transaction_id') }),
   z
-    .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
+    .extend(standardListParams)
     .extend(transactionFilters),
 ]);
 

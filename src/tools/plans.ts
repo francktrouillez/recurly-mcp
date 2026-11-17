@@ -1,20 +1,24 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const planId = idParam('plan_id');
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(standardListParams)
     .extend({ state: z.string().optional().describe('Filter by state, e.g. active.') }),
-  z.object({ action: z.literal('get'), plan_id: planId }),
+  z.strictObject({ action: z.literal('get'), plan_id: planId }),
   z
-    .object({ action: z.literal('list_add_ons'), plan_id: planId })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_add_ons'), plan_id: planId })
+    .extend(standardListParams)
     .extend({ state: z.string().optional().describe('Filter by state.') }),
-  z.object({ action: z.literal('get_add_on'), plan_id: planId, add_on_id: idParam('add_on_id') }),
+  z.strictObject({
+    action: z.literal('get_add_on'),
+    plan_id: planId,
+    add_on_id: idParam('add_on_id'),
+  }),
 ]);
 
 export const plansTool: ToolDefinition<typeof inputSchema> = {

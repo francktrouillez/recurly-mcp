@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams, standardListParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const invoiceId = idParam('invoice_id');
@@ -17,21 +17,19 @@ const lineItemFilters = {
 
 const inputSchema = z.discriminatedUnion('action', [
   z
-    .object({ action: z.literal('list') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list') })
+    .extend(standardListParams)
     .extend(invoiceFilters),
-  z.object({ action: z.literal('get'), invoice_id: invoiceId }),
-  z.object({ action: z.literal('get_pdf'), invoice_id: invoiceId }),
+  z.strictObject({ action: z.literal('get'), invoice_id: invoiceId }),
+  z.strictObject({ action: z.literal('get_pdf'), invoice_id: invoiceId }),
   z
-    .object({ action: z.literal('list_line_items'), invoice_id: invoiceId })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_line_items'), invoice_id: invoiceId })
+    .extend(standardListParams)
     .extend(lineItemFilters),
+  z.strictObject({ action: z.literal('list_related'), invoice_id: invoiceId }).extend(listParams()),
   z
-    .object({ action: z.literal('list_related'), invoice_id: invoiceId })
-    .extend(listParamsSchema.shape),
-  z
-    .object({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
-    .extend(listParamsSchema.shape)
+    .strictObject({ action: z.literal('list_for_account'), account_id: idParam('account_id') })
+    .extend(standardListParams)
     .extend(invoiceFilters),
 ]);
 

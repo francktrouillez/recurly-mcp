@@ -1,16 +1,16 @@
 import { z } from 'zod';
-import { enc, fetchList, idParam, listParamsSchema } from './shared.js';
+import { enc, fetchList, idParam, listParams } from './shared.js';
 import type { ToolDefinition } from './types.js';
 
 const externalProductId = idParam('external_product_id');
 
 const inputSchema = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('list') }).extend(listParamsSchema.shape),
-  z.object({ action: z.literal('get'), external_product_id: externalProductId }),
+  z.strictObject({ action: z.literal('list') }).extend(listParams('sort')),
+  z.strictObject({ action: z.literal('get'), external_product_id: externalProductId }),
   z
-    .object({ action: z.literal('list_references'), external_product_id: externalProductId })
-    .extend(listParamsSchema.shape),
-  z.object({
+    .strictObject({ action: z.literal('list_references'), external_product_id: externalProductId })
+    .extend(listParams('sort')),
+  z.strictObject({
     action: z.literal('get_reference'),
     external_product_id: externalProductId,
     external_product_reference_id: idParam('external_product_reference_id'),
