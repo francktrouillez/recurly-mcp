@@ -40,9 +40,10 @@
     "dev": "tsx src/bin.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint 'src/**/*.ts' 'test/**/*.ts'",
-    "typecheck": "tsc --noEmit",
+    "lint": "eslint 'src/**/*.ts' 'test/**/*.ts' 'scripts/**/*.ts'",
+    "typecheck": "tsc -p tsconfig.scripts.json",
     "validate": "node scripts/validate-mcp.mjs 31",
+    "parity": "tsx scripts/check-parity.ts",
     "prepublishOnly": "npm run build"
   },
   "engines": {
@@ -71,6 +72,7 @@
     "prettier": "^3.3.0",
     "tsx": "^4.16.0",
     "typescript": "^5.5.0",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "yaml": "^2.9.1"
   }
 }

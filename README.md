@@ -196,7 +196,10 @@ npm run lint
 npm run build            # emits dist/
 npm run validate         # spawns the built server, checks tool schemas (expects 31 tools)
 npm run dev              # tsx src/bin.ts (for local stdio testing)
+npm run parity           # diff our tools against Recurly's published OpenAPI spec
 ```
+
+`npm run parity` fetches Recurly's OpenAPI spec ([`recurly-client-node/openapi/api.yaml`](https://github.com/recurly/recurly-client-node/blob/master/openapi/api.yaml)) and compares its GET endpoints and query params with what our tools actually call (derived from the tool registry; `recurly_request` is excluded). It exits 1 when the spec has a GET endpoint no tool covers, or a query param a covered endpoint accepts that our action doesn't. Params we accept that the spec doesn't list, endpoints we call that it doesn't document, and uncovered deprecated endpoints are warnings; `--strict` turns them into errors. `cursor` is always allowed. To use a local copy: `npm run parity -- ./api.yaml` (or set `RECURLY_OPENAPI_SPEC` to a path or URL). The [`spec-parity`](.github/workflows/parity.yml) workflow runs it weekly; a failing run means the spec has drifted.
 
 ## Contributing
 
